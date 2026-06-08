@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "ESP Harness Run State",
+  "type": "object",
+  "required": ["run_id", "feature", "module", "entry_point", "mode", "doc_root", "stages"],
+  "properties": {
+    "run_id":      { "type": "string", "pattern": "^[0-9]{8}-[0-9]{4}-[A-Za-z0-9_.-]+$" },
+    "feature":     { "type": "string", "minLength": 1 },
+    "module":      { "type": "string", "enum": ["esp-system-ui", "esp-remoting-server-web-service", "esp-remoting-server-restful", "esp-batch"] },
+    "entry_point": { "type": "string", "minLength": 1 },
+    "mode":        { "type": "string", "enum": ["A", "B", "C"] },
+    "doc_root":    { "type": "string", "pattern": "^\\.kiro/docs/.+/$" },
+    "started_at":  { "type": ["string", "null"] },
+    "ended_at":    { "type": ["string", "null"] },
+    "vault_available": { "type": "boolean" },
+    "stages": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["id", "layer", "status", "retry_count"],
+        "properties": {
+          "id":             { "type": "string", "enum": ["esp-deps", "esp-vars", "esp-erd", "esp-funcs", "esp-flow", "esp-rules", "esp-ui-verify", "esp-sd", "esp-api-contract", "esp-sa"] },
+          "layer":          { "type": "number", "enum": [1, 2, 3, 3.5, 4] },
+          "status":         { "type": "string", "enum": ["pending", "running", "done", "failed", "skipped"] },
+          "doc_path":       { "type": ["string", "null"] },
+          "confidence":     { "type": ["string", "null"], "enum": ["high", "medium", "low", null] },
+          "pending_review": { "type": "array", "items": { "type": "string" } },
+          "retry_count":    { "type": "integer", "minimum": 0, "maximum": 2 },
+          "started_at":     { "type": ["string", "null"] },
+          "ended_at":       { "type": ["string", "null"] },
+          "error":          { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}
