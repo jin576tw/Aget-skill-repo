@@ -1,5 +1,0 @@
-# ESP Harness Run State Directory
-
-This folder hosts short-lived state for `start-analysis` agent runs.
-
-See `P:\MEMORY\knowledge\harness-protocol.md` for the full protocol.
