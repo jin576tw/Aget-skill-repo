@@ -71,16 +71,23 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 
 ### Step 3–6 — 實作循環（每個 驗收項 一輪，透過 subagents，不中斷）
 
-> ⛔ **HARD RULE：`@unit-test-writer` 與 `@implementer` 必須遵循 `tdd` skill 規則，禁止 horizontal slicing（一次寫所有 AC 測試再統一實作）。**
+> ⛔ **HARD RULE：測試 writer 與 `@implementer` 必須遵循 TDD，禁止 horizontal slicing（一次寫所有 AC 測試再統一實作）。**
 
-**測試層級對應規則**（`@unit-test-writer` 依 Step 2 計畫表執行）：
+**語言路由（Step 3 進入前先判定，整個任務只判定一次）：**
+
+| 專案特徵 | 測試 agent | 實作 agent skill |
+|---------|-----------|----------------|
+| `pom.xml` 存在（Java） | `@java-unit-test-writer`（`java-testing` skill） | `@implementer`（不載入 angular-conventions） |
+| `package.json` + Angular | `@unit-test-writer`（`angular-testing` skill） | `@implementer`（載入 `angular-conventions`） |
+
+**測試層級對應規則：**
 
 | 行為類型 | 測試層級 |
 |---------|---------|
 | 金額計算、日期判斷、狀態轉換、商業規則 | pure function / domain unit |
 | API 轉換、錯誤映射、流程協調 | service unit |
-| Input/Output、表單互動、DOM 顯示、按鈕狀態 | component test |
-| 關鍵使用者旅程、前後端整合 | E2E（Step 7） |
+| Input/Output、表單互動、DOM 顯示、按鈕狀態 | component test（Angular 限定） |
+| 關鍵使用者旅程 / HTTP endpoint 行為 | Step 7 決策（見下） |
 
 依單一 驗收項 節奏重複以下循環，**不得跳過或 inline**，每輪自動執行完畢後繼續下一個 驗收項：
 
@@ -88,13 +95,14 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 ┌─────────────────────────────────────────────────────────────┐
 │  AC-XX                                                      │
 │                                                             │
-│  1. @unit-test-writer（載入 tdd skill）→ 寫紅燈測試         │
-│     每條 AC 最低測試案例：happy path + 邊界值/空值 + 異常    │
-│     測試結構對應 GWT：describe('AC-XX: ...') { it(...) }    │
+│  1. @unit-test-writer（Angular）或                          │
+│     @java-unit-test-writer（Java）→ 寫紅燈測試             │
+│     每條 AC 最低案例：happy path + 邊界值/空值 + 異常       │
 │     若為純 template 變更（無邏輯），可標記「免 unit」        │
 │                                                             │
-│  2. @implementer（載入 tdd skill + angular-conventions）    │
-│     → 最小實作使測試綠燈（禁 any，遵循 Standalone/RFM）     │
+│  2. @implementer → 最小實作使測試綠燈                       │
+│     Angular：載入 angular-conventions                       │
+│     Java：不載入 angular-conventions                        │
 │                                                             │
 │  3. @code-reviewer → review，不通過則回 @implementer        │
 │                                                             │
@@ -102,44 +110,49 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**測試骨架規則（`@unit-test-writer` 強制遵循）：**
+**Angular 測試骨架（`@unit-test-writer` 強制遵循）：**
+```ts
+describe('AC-XX: [AC 描述]', () => {
+  // Given / When / Then
+  it('should [happy path Then]', ...);
+  it('should [boundary/null Then]', ...);
+});
+```
 
-- 測試名稱格式：`it('AC-XX: should ...')`，禁止用 `fail('Not implemented')` 製造假紅燈
-- 測試結構必須顯式對應 spec AC 的 Given/When/Then：
-  ```ts
-  describe('AC-XX: [AC 描述]', () => {
-    // Given: [前置條件]
-    // When: [觸發動作]
-    it('should [happy path Then]', ...);       // 必填
-    it('should [boundary/null Then]', ...);    // 若 AC 有定義邊界值
-    it('should [error/disabled Then]', ...);   // 若 AC 的 Then 含異常狀態
-  });
-  ```
-- 測試驗證行為結果，不得綁定私有方法或呼叫次數
-- Service 層純函式優先，迫使商業規則從 Component 中分離
+**Java 測試骨架（`@java-unit-test-writer` 強制遵循）：**
+```java
+// AC-XX: [AC 描述]
+@Test
+@DisplayName("AC-XX: should ... when ...")
+void acXX_method_condition() { /* Given / When / Then */ }
+```
 
 > ⚡ **Compact Signal（AC 循環）**：每個 subagent 完成後**只回傳一行信號**，禁止回傳代碼：
-> - `@unit-test-writer` → `AC-XX | N/M red`
-> - `@implementer` → `AC-XX PASS | file1.ts, file2.ts` 或 `AC-XX FAIL | {原因}`
+> - 測試 writer → `AC-XX | N/M red`
+> - `@implementer` → `AC-XX PASS | file1, file2` 或 `AC-XX FAIL | {原因}`
 > - `@code-reviewer` → `AC-XX PASS` 或 `AC-XX FAIL | H:N M:N`
 
 所有 驗收項 完成後直接進入 Step 7，**不在 驗收項 循環中間中斷**。
 
-### Step 7 — E2E Harness 決策（不中斷，依情況詢問）
+### Step 7 — 整合測試 / E2E 三層決策（不中斷，自動執行）
 
-> ⛔ **HARD RULE：「需連 SIT/後端環境」絕對不是跳過 E2E 的理由。**
-> Angular GUI 的 E2E 一律採 **mock-based 本地 Playwright**（`page.route()` mock API 回應），
-> 使用共享 harness `C:\Users\003689\Desktop\playwright-harness`，完全不依賴外部環境。
+> ⛔ **HARD RULE：「需連 SIT/後端環境」絕對不是跳過測試的理由。**
+> Angular E2E 一律 mock-based 本地 Playwright。Java API 整合測試一律 MockMvc，不需啟動真實 server。
 
-**合法豁免條件（需明文說明，滿足其中之一）：**
-- 無 UI 表面（純 service / worker / utility，無 component 互動）
-- 純靜態 template 文字變更（無 click / input / toast / dialog 等互動邏輯）
-- 已有完整覆蓋此路徑的既有 E2E spec
+**三層判定表（由上往下，首先命中者執行）：**
 
-8. 判斷是否需要 E2E：若任何 AC 涉及 component 互動（點按鈕、填欄位、觀察 toast / dialog），則需要 E2E，不得豁免。
-9. 若需要：**直接啟動 `@test-writer` subagent**（載入 playwright-patterns skill），撰寫 mock-based Playwright spec（`playwright-harness`），**不需詢問使用者**。
-   - ⚡ **Compact Signal**：`@test-writer` 僅回傳 `{spec}.spec.ts | TC-01~TC-N | PASS N/N`，禁止回傳 Playwright 代碼或 CLI 完整輸出。
-10. 若合法豁免：**明文輸出豁免理由**後繼續 Step 8。
+| 層級 | 判定條件 | 執行 |
+|------|---------|------|
+| **UI 互動** | 任何 AC 涉及 click / input / toast / dialog | 直接啟動 `@test-writer`（Playwright mock-based） |
+| **後端 API endpoint** | 改動含 `@RestController` / `@PostMapping` / `@PutMapping` / `@DeleteMapping`；或 DTO / Service 改動影響 HTTP 回應碼 | 直接啟動 `@java-unit-test-writer`（MockMvc 模式，`IT-XX`） |
+| **純邏輯 / 無 HTTP 邊界** | 純 utility / domain，無 endpoint、無 UI | 豁免，明文說明理由後繼續 Step 8 |
+
+8. 依三層判定表決定測試類型，**不需詢問使用者，直接執行**。
+9. **UI 互動**：啟動 `@test-writer`（`playwright-patterns` skill），撰寫 mock-based Playwright spec 至 `playwright-harness`。
+   - ⚡ Compact Signal：`{spec}.spec.ts | TC-01~TC-N | PASS N/N`
+10. **後端 API endpoint**：啟動 `@java-unit-test-writer`（`java-testing` skill MockMvc 模式），建立 `*IT.java`，測試重點為「觸發 bug 的 request body → 應回 2xx，不應 NPE 500」。
+    - ⚡ Compact Signal：`IT-XX | N/M red`（測試寫完後交 `@implementer` 補綠燈）
+11. **豁免**：明文輸出豁免類型與理由後繼續 Step 8。
 
 ### Step 8 — 驗收條件收尾（**STOP gate #2**）
 
@@ -169,10 +182,11 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 |----------|----------|-----------|----------------------|
 | `@plan-formatter` | Step 0（固定執行） | preflight | Plan Input Report（精簡表格） |
 | `@spec-writer` | Step 1 / Step 8 | spec-conventions | `spec.md updated \| AC-XX` / `changelog updated` |
-| `@unit-test-writer` | Step 3 每個 AC | tdd | `AC-XX \| N/M red` |
-| `@implementer` | Step 3 每個 AC | angular-conventions | `AC-XX PASS \| files` / `FAIL \| 原因` |
+| `@unit-test-writer` | Step 3（Angular 專案） | angular-testing | `AC-XX \| N/M red` |
+| `@java-unit-test-writer` | Step 3（Java 專案）/ Step 7（API endpoint 改動） | java-testing | `AC-XX \| N/M red` / `IT-XX \| N/M red` |
+| `@implementer` | Step 3 每個 AC | Angular：`angular-conventions`；Java：不載入 | `AC-XX PASS \| files` / `FAIL \| 原因` |
 | `@code-reviewer` | Step 3 每個 AC | review-checklist | `AC-XX PASS` / `FAIL \| H:N M:N` |
-| `@test-writer` | Step 7（有 UI 互動） | playwright-patterns | `{spec}.spec.ts \| PASS N/N` |
+| `@test-writer` | Step 7（UI 互動） | playwright-patterns | `{spec}.spec.ts \| PASS N/N` |
 
 ---
 
