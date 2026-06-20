@@ -1,0 +1,38 @@
+# ── 敏感認證 ──────────────────────────────────────────
+.credentials.json
+mcp-needs-auth-cache.json
+control.key
+pipe.key
+
+# ── 執行時資料（非 source） ────────────────────────────
+cache/
+sessions/
+projects/
+plans/
+backups/
+downloads/
+debug/
+daemon/
+jobs/
+tasks/
+paste-cache/
+file-history/
+ide/
+session-env/
+shell-snapshots/
+pty-pids/
+teams/
+dispatch/
+plugins/
+
+# ── Log 與執行歷史 ─────────────────────────────────────
+history.jsonl
+daemon.log
+.last-cleanup
+.last-update-result.json
+stats-cache.json
+changelog.md
+
+# ── 備份 ──────────────────────────────────────────────
+*.backup.*
+.claude.json.backup*
