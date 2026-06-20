@@ -78,7 +78,8 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 | 專案特徵 | 測試 agent | 實作 agent skill |
 |---------|-----------|----------------|
 | `pom.xml` 存在（Java） | `@java-unit-test-writer`（`java-testing` skill） | `@implementer`（不載入 angular-conventions） |
-| `package.json` + Angular | `@unit-test-writer`（`angular-testing` skill） | `@implementer`（載入 `angular-conventions`） |
+| `package.json` + `nuxt` 或 `vue`（無 `@angular/core`）| `@vue-unit-test-writer`（`vue-testing` skill） | `@implementer`（不載入 angular-conventions） |
+| `package.json` + `@angular/core` | `@angular-unit-test-writer`（`angular-testing` skill） | `@implementer`（載入 `angular-conventions`） |
 
 **測試層級對應規則：**
 
@@ -95,7 +96,8 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 ┌─────────────────────────────────────────────────────────────┐
 │  AC-XX                                                      │
 │                                                             │
-│  1. @unit-test-writer（Angular）或                          │
+│  1. @angular-unit-test-writer（Angular）或                  │
+│     @vue-unit-test-writer（Vue/Nuxt2）或                    │
 │     @java-unit-test-writer（Java）→ 寫紅燈測試             │
 │     每條 AC 最低案例：happy path + 邊界值/空值 + 異常       │
 │     若為純 template 變更（無邏輯），可標記「免 unit」        │
@@ -182,7 +184,8 @@ void acXX_method_condition() { /* Given / When / Then */ }
 |----------|----------|-----------|----------------------|
 | `@plan-formatter` | Step 0（固定執行） | preflight | Plan Input Report（精簡表格） |
 | `@spec-writer` | Step 1 / Step 8 | spec-conventions | `spec.md updated \| AC-XX` / `changelog updated` |
-| `@unit-test-writer` | Step 3（Angular 專案） | angular-testing | `AC-XX \| N/M red` |
+| `@angular-unit-test-writer` | Step 3（Angular 專案） | angular-testing | `AC-XX \| N/M red` |
+| `@vue-unit-test-writer` | Step 3（Vue/Nuxt2 專案） | vue-testing | `AC-XX \| N/M red` |
 | `@java-unit-test-writer` | Step 3（Java 專案）/ Step 7（API endpoint 改動） | java-testing | `AC-XX \| N/M red` / `IT-XX \| N/M red` |
 | `@implementer` | Step 3 每個 AC | Angular：`angular-conventions`；Java：不載入 | `AC-XX PASS \| files` / `FAIL \| 原因` |
 | `@code-reviewer` | Step 3 每個 AC | review-checklist | `AC-XX PASS` / `FAIL \| H:N M:N` |
