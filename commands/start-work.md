@@ -77,9 +77,8 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 
 | 專案特徵 | 測試 agent | 實作 agent skill |
 |---------|-----------|----------------|
-| `pom.xml` 存在（Java） | `@java-unit-test-writer`（`java-testing` skill） | `@implementer`（不載入 angular-conventions） |
-| `package.json` + `nuxt` 或 `vue`（無 `@angular/core`）| `@vue-unit-test-writer`（`vue-testing` skill） | `@implementer`（不載入 angular-conventions） |
-| `package.json` + `@angular/core` | `@angular-unit-test-writer`（`angular-testing` skill） | `@implementer`（載入 `angular-conventions`） |
+| `pom.xml` 或 `build.gradle` 存在（後端） | `@backend-unit-test-writer`（agent 內偵測語言，載入 `java-testing`） | `@implementer`（不載入 angular-conventions） |
+| `package.json` 存在（前端） | `@frontend-unit-test-writer`（agent 內偵測 Angular/Vue，載入對應 skill） | `@implementer`（Angular：載入 `angular-conventions`；Vue：不載入） |
 
 **測試層級對應規則：**
 
@@ -96,9 +95,9 @@ WAITING_FOR_PLAN_CONFIRMATION — 請確認後繼續。
 ┌─────────────────────────────────────────────────────────────┐
 │  AC-XX                                                      │
 │                                                             │
-│  1. @angular-unit-test-writer（Angular）或                  │
-│     @vue-unit-test-writer（Vue/Nuxt2）或                    │
-│     @java-unit-test-writer（Java）→ 寫紅燈測試             │
+│  1. @frontend-unit-test-writer（前端：Angular/Vue 自動偵測）│
+│     @backend-unit-test-writer（後端：Java 等自動偵測）      │
+│     → 寫紅燈測試                                            │
 │     每條 AC 最低案例：happy path + 邊界值/空值 + 異常       │
 │     若為純 template 變更（無邏輯），可標記「免 unit」        │
 │                                                             │
@@ -152,7 +151,7 @@ void acXX_method_condition() { /* Given / When / Then */ }
 8. 依三層判定表決定測試類型，**不需詢問使用者，直接執行**。
 9. **UI 互動**：啟動 `@test-writer`（`playwright-patterns` skill），撰寫 mock-based Playwright spec 至 `playwright-harness`。
    - ⚡ Compact Signal：`{spec}.spec.ts | TC-01~TC-N | PASS N/N`
-10. **後端 API endpoint**：啟動 `@java-unit-test-writer`（`java-testing` skill MockMvc 模式），建立 `*IT.java`，測試重點為「觸發 bug 的 request body → 應回 2xx，不應 NPE 500」。
+10. **後端 API endpoint**：啟動 `@backend-unit-test-writer`（`java-testing` skill MockMvc 模式），建立 `*IT.java`，測試重點為「觸發 bug 的 request body → 應回 2xx，不應 NPE 500」。
     - ⚡ Compact Signal：`IT-XX | N/M red`（測試寫完後交 `@implementer` 補綠燈）
 11. **豁免**：明文輸出豁免類型與理由後繼續 Step 8。
 
@@ -184,9 +183,8 @@ void acXX_method_condition() { /* Given / When / Then */ }
 |----------|----------|-----------|----------------------|
 | `@plan-formatter` | Step 0（固定執行） | preflight | Plan Input Report（精簡表格） |
 | `@spec-writer` | Step 1 / Step 8 | spec-conventions | `spec.md updated \| AC-XX` / `changelog updated` |
-| `@angular-unit-test-writer` | Step 3（Angular 專案） | angular-testing | `AC-XX \| N/M red` |
-| `@vue-unit-test-writer` | Step 3（Vue/Nuxt2 專案） | vue-testing | `AC-XX \| N/M red` |
-| `@java-unit-test-writer` | Step 3（Java 專案）/ Step 7（API endpoint 改動） | java-testing | `AC-XX \| N/M red` / `IT-XX \| N/M red` |
+| `@frontend-unit-test-writer` | Step 3（前端專案，自動偵測 Angular/Vue） | 內部偵測後載入 angular-testing 或 vue-testing | `AC-XX \| N/M red` |
+| `@backend-unit-test-writer` | Step 3（後端專案）/ Step 7（API endpoint 改動） | java-testing（含 MockMvc integration test） | `AC-XX \| N/M red` / `IT-XX \| N/M red` |
 | `@implementer` | Step 3 每個 AC | Angular：`angular-conventions`；Java：不載入 | `AC-XX PASS \| files` / `FAIL \| 原因` |
 | `@code-reviewer` | Step 3 每個 AC | review-checklist | `AC-XX PASS` / `FAIL \| H:N M:N` |
 | `@test-writer` | Step 7（UI 互動） | playwright-patterns | `{spec}.spec.ts \| PASS N/N` |
