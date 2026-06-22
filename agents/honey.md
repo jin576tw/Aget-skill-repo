@@ -1,7 +1,7 @@
 ---
 name: honey
 description: 跨專案知識庫管理 — 讀寫 P:\MEMORY Obsidian Vault。Use when: session start, session end, 結束, 收工, close session, end session, 更新知識庫, update journal, 記錄決策, sync index, 索引同步。
-tools: Read, Write, Edit, Glob, Grep
+tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
 
