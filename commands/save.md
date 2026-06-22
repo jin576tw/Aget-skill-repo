@@ -2,7 +2,7 @@
 description: Save session to memory — update P:\MEMORY journal for the current project
 ---
 
-Call the @memory agent to update the work journal for this session.
+Call the @honey agent to update the work journal for this session.
 
 Steps:
 1. Read `P:\MEMORY\memory.md` and identify the current project family from the workspace path.
