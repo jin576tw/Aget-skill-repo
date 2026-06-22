@@ -140,20 +140,23 @@ void acXX_method_condition() { /* Given / When / Then */ }
 > ⛔ **HARD RULE：「需連 SIT/後端環境」絕對不是跳過測試的理由。**
 > Angular E2E 一律 mock-based 本地 Playwright。Java API 整合測試一律 MockMvc，不需啟動真實 server。
 
-**三層判定表（由上往下，首先命中者執行）：**
+**四層判定表（由上往下，首先命中者執行）：**
 
 | 層級 | 判定條件 | 執行 |
 |------|---------|------|
 | **UI 互動** | 任何 AC 涉及 click / input / toast / dialog | 直接啟動 `@test-writer`（Playwright mock-based） |
+| **CSS layout 可見變化** | 任何 AC 改動 `overflow`, `overflow-x`, `overflow-y`, `max-height`, `height`, `display`, `flex`, `grid` 等視覺容器屬性 | 直接啟動 `@test-writer`（`toHaveCSS()` + 截圖斷言，見 `playwright-patterns` → layout-assertions） |
 | **後端 API endpoint** | 改動含 `@RestController` / `@PostMapping` / `@PutMapping` / `@DeleteMapping`；或 DTO / Service 改動影響 HTTP 回應碼 | 直接啟動 `@java-unit-test-writer`（MockMvc 模式，`IT-XX`） |
-| **純邏輯 / 無 HTTP 邊界** | 純 utility / domain，無 endpoint、無 UI | 豁免，明文說明理由後繼續 Step 8 |
+| **純邏輯 / 無 HTTP 邊界** | 純 utility / domain，無 endpoint、無 UI、無視覺容器屬性變更 | 豁免，明文說明理由後繼續 Step 8 |
 
-8. 依三層判定表決定測試類型，**不需詢問使用者，直接執行**。
+8. 依四層判定表決定測試類型，**不需詢問使用者，直接執行**。
 9. **UI 互動**：啟動 `@test-writer`（`playwright-patterns` skill），撰寫 mock-based Playwright spec 至 `playwright-harness`。
    - ⚡ Compact Signal：`{spec}.spec.ts | TC-01~TC-N | PASS N/N`
-10. **後端 API endpoint**：啟動 `@backend-unit-test-writer`（`java-testing` skill MockMvc 模式），建立 `*IT.java`，測試重點為「觸發 bug 的 request body → 應回 2xx，不應 NPE 500」。
+10. **CSS layout 可見變化**：啟動 `@test-writer`，使用 `toHaveCSS()` 斷言目標元素的 CSS 屬性值，並以截圖作為 evidence。
+    - ⚡ Compact Signal：`{spec}.spec.ts | TC-01~TC-N | PASS N/N`
+11. **後端 API endpoint**：啟動 `@backend-unit-test-writer`（`java-testing` skill MockMvc 模式），建立 `*IT.java`，測試重點為「觸發 bug 的 request body → 應回 2xx，不應 NPE 500」。
     - ⚡ Compact Signal：`IT-XX | N/M red`（測試寫完後交 `@implementer` 補綠燈）
-11. **豁免**：明文輸出豁免類型與理由後繼續 Step 8。
+12. **豁免**：明文輸出豁免類型與理由後繼續 Step 8。
 
 ### Step 8 — 驗收條件收尾（**STOP gate #2**）
 

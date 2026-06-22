@@ -73,6 +73,10 @@ See [auth-mock.md](auth-mock.md) for authentication bypass patterns.
 
 See [report-template.md](report-template.md) for standardized test report format.
 
+## Layout / CSS Assertions
+
+See [layout-assertions.md](layout-assertions.md) for CSS property assertions (`toHaveCSS`), scroll behavior verification, and screenshot evidence patterns — required for any AC that changes `overflow`, `max-height`, `height`, `display`, or other visual container properties.
+
 ## Best Practices
 
 - Use `await expect(locator).toBeVisible()` instead of `page.waitForTimeout()`
