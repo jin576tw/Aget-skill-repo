@@ -17,6 +17,7 @@
 - Provide fix suggestions, not just problem descriptions
 
 ## Session 開始
+- 開始前先執行 `git -C "P:\MEMORY" pull` 確認知識庫為最新狀態；若失敗或有衝突則略過，不阻塞工作。
 - 開始專案工作時，**必須先讀取** `P:\MEMORY\memory.md`，依其「快速指南」判斷專案族群後讀取對應 `projects/{family}/{family}.md` 與 `projects/{family}/status.md`；若已鎖定子專案，再讀取 `projects/{family}/{leaf}.md`，取得工作狀態再開始。
 - 若無法存取 `P:\MEMORY`，以專案內 `CLAUDE.md`、instructions 與原始碼為依據，不阻塞工作。
 
