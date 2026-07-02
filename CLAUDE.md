@@ -19,11 +19,11 @@
 ## Session 開始
 - 開始前先執行 `git -C "P:\MEMORY" pull` 確認知識庫為最新狀態；若失敗或有衝突則略過，不阻塞工作。
 - 開始專案工作時，**依序執行**：
-  1. 讀 `P:\MEMORY\memory.md`（**含「常見陷阱」段落，逐條確認是否與本次任務相關**）
+  1. 讀 `P:\MEMORY\memory.md`（**含「常見陷阱」段落，逐條確認是否與本次任務相關**）；若存在，再讀 `P:\MEMORY\AGENTS.md`
   2. 讀 `P:\MEMORY\knowledge\knowledge.md`，依任務類型補讀對應知識檔
-     （bug fix → `lessons-learned`；分析 → `domain-map` + `lookup-map`；工具使用 → `ai-tooling`；新功能 → `workflow-map`）
-  3. 讀 `projects/{family}/{family}.md` 與 `projects/{family}/status.md`
-  4. 若已鎖定子專案，再讀 `projects/{family}/{leaf}.md`
+     （bug fix → `lessons-learned`；分析 → `domain-map` + `lookup-map`；工具使用 → `ai-tooling`；新功能 → `workflow-map`；一般規範 → `conventions`）
+  3. 依 `memory.md`「快速指南」判斷專案族群（Core / PA / POS / ESP / ADP / SDD）後，讀取對應 `projects/{family}/{family}.md` 與 `projects/{family}/status.md`
+  4. 若已鎖定子專案，再讀取 `projects/{family}/{leaf}.md`，取得工作狀態再開始
 - 若無法存取 `P:\MEMORY`，以專案內 `CLAUDE.md`、instructions 與原始碼為依據，不阻塞工作。
 
 ## 工作中知識庫查詢
@@ -43,7 +43,8 @@
 - `lessons-learned` 有對應教訓段 → 必須在動手前讀完該段，確認已知問題
 
 ## Session 結束
-- 當使用者說「結束」、「收工」、「close session」、「end session」、`/clear` 或 `/save` 時，若可存取 `P:\MEMORY\knowledge\conventions.md`，則依「Session 結束協議」執行：更新日誌、更新專案狀態、知識蒸餾、三個月清理。若無法存取則略過。處理完成後顯示 `Memory has updated!`。
+- 當使用者說「結束」、「收工」、「close session」、「end session」、`/clear` 或 `/save` 時，若可存取 `P:\MEMORY\knowledge\conventions.md`，則依「Session 結束協議」執行：更新日誌、更新專案狀態、知識蒸餾、來源同步、必要時執行 `maintenance/wiki-lint.md`、三個月清理。若無法存取則略過。處理完成後顯示 `Memory has updated!`。
+- 若使用者明確要求不要 push，只建立本地 commit 或保留本地變更並回報狀態，不執行 git push。
 
 ## 工具庫 Repo 同步規則
 - `C:\Users\003689\.claude` 已連結至 GitHub repo：https://github.com/jin576tw/Aget-skill-repo
