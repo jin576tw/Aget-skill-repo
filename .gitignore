@@ -28,6 +28,8 @@ plugins/
 # ── Log 與執行歷史 ─────────────────────────────────────
 history.jsonl
 daemon.log
+daemon.lock
+daemon.status.json
 .last-cleanup
 .last-update-result.json
 stats-cache.json
