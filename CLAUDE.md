@@ -18,11 +18,14 @@
 
 ## Session 開始
 - 開始前先執行 `git -C "P:\MEMORY" pull` 確認知識庫為最新狀態；若失敗或有衝突則略過，不阻塞工作。
-- 開始專案工作時，**必須先讀取** `P:\MEMORY\memory.md`，依其「快速指南」判斷專案族群後讀取對應 `projects/{family}/{family}.md` 與 `projects/{family}/status.md`；若已鎖定子專案，再讀取 `projects/{family}/{leaf}.md`，取得工作狀態再開始。
+- 開始專案工作時，**必須先讀取** `P:\MEMORY\memory.md`；若存在，再讀 `P:\MEMORY\AGENTS.md`。
+- 接著讀取 `P:\MEMORY\knowledge\knowledge.md`，並依任務類型補讀 `conventions.md`、`domain-map.md`、`workflow-map.md`、`lookup-map.md`、`lessons-learned.md` 等必要知識。
+- 依 `memory.md`「快速指南」判斷專案族群（Core / PA / POS / ESP / ADP / SDD）後，讀取對應 `projects/{family}/{family}.md` 與 `projects/{family}/status.md`；若已鎖定子專案，再讀取 `projects/{family}/{leaf}.md`，取得工作狀態再開始。
 - 若無法存取 `P:\MEMORY`，以專案內 `CLAUDE.md`、instructions 與原始碼為依據，不阻塞工作。
 
 ## Session 結束
-- 當使用者說「結束」、「收工」、「close session」、「end session」、`/clear` 或 `/save` 時，若可存取 `P:\MEMORY\knowledge\conventions.md`，則依「Session 結束協議」執行：更新日誌、更新專案狀態、知識蒸餾、三個月清理。若無法存取則略過。處理完成後顯示 `Memory has updated!`。
+- 當使用者說「結束」、「收工」、「close session」、「end session」、`/clear` 或 `/save` 時，若可存取 `P:\MEMORY\knowledge\conventions.md`，則依「Session 結束協議」執行：更新日誌、更新專案狀態、知識蒸餾、來源同步、必要時執行 `maintenance/wiki-lint.md`、三個月清理。若無法存取則略過。處理完成後顯示 `Memory has updated!`。
+- 若使用者明確要求不要 push，只建立本地 commit 或保留本地變更並回報狀態，不執行 git push。
 
 ## 工具庫 Repo 同步規則
 - `C:\Users\003689\.claude` 已連結至 GitHub repo：https://github.com/jin576tw/Aget-skill-repo
