@@ -35,6 +35,7 @@ Steps:
 6. If this session changed vault structure, indexes, hubs, cross-page rules, or added many pages, run the checklist in `P:\MEMORY\maintenance\wiki-lint.md` and record meaningful findings in `journal/log.md`.
 7. Do not use legacy per-project journal files such as `P:\MEMORY\journal\pa-ui.md` or `P:\MEMORY\journal\pos-ui.md`.
 8. If workspace instructions still point to legacy `projects/{leaf}/index.md` or `projects/{leaf}/status.md`, update them as part of the same maintenance task.
+8a. **工具庫同步檢查**：若本 session 中 `~/.claude/skills/`、`agents/`、`hooks/`、`commands/` 下有任何新增、修改、刪除，必須同步更新 `P:\MEMORY\knowledge\ai-tooling.md` 對應條目（新增條目 / 更新來源路徑 / 標記失效），並更新「全量驗證歷史」表格的最後驗證日期。
 9. Commit changes to `P:\MEMORY`; push only when the user has not asked to avoid pushing:
    ```
    cd "P:\MEMORY"
