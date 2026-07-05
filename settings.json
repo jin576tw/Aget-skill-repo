@@ -35,5 +35,18 @@
   },
   "autoUpdatesChannel": "latest",
   "tui": "fullscreen",
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -ExecutionPolicy Bypass -NonInteractive -File \"C:\\Users\\003689\\.claude\\hooks\\pitfall-guard.ps1\""
+          }
+        ]
+      }
+    ]
+  }
 }

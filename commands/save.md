@@ -31,6 +31,7 @@ Steps:
    - 跨專案慣例 → `P:\MEMORY\knowledge\conventions.md`
    - 跨 session 會重複使用的背景、流程、查找入口 → `domain-map.md` / `workflow-map.md` / `lookup-map.md`
    - If durable knowledge came from Jira, screenshots, official docs, external articles, raw files, or other preserved evidence, update `P:\MEMORY\sources\sources.md` and cite the source in the new/updated knowledge page.
+   - **pitfalls.json 蒸餾判斷**：若本次教訓屬於**機械可判定類型**（指令參數錯誤、檔案格式限制、工具呼叫方式等），判斷是否能以 `{id, pattern, scope, message, severity}` 格式表達，若能則同步新增至 `P:\MEMORY\knowledge\pitfalls.json`；首批以機械確定性高的教訓為優先，避免規則過多造成提示疲勞。
 6. If this session changed vault structure, indexes, hubs, cross-page rules, or added many pages, run the checklist in `P:\MEMORY\maintenance\wiki-lint.md` and record meaningful findings in `journal/log.md`.
 7. Do not use legacy per-project journal files such as `P:\MEMORY\journal\pa-ui.md` or `P:\MEMORY\journal\pos-ui.md`.
 8. If workspace instructions still point to legacy `projects/{leaf}/index.md` or `projects/{leaf}/status.md`, update them as part of the same maintenance task.
