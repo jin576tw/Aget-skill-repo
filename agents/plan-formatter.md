@@ -41,6 +41,13 @@ skill: preflight
 | Service | `src/app/.../{name}.service.ts` | 若有依賴，否則填「—」 |
 | Type / Model | `src/app/.../{name}.model.ts` | 若有依賴，否則填「—」 |
 
+### 知識庫背景
+| 項目 | 內容 |
+|------|------|
+| 適用 skills | {`~/.claude/skills/` 中與本任務相關者，無則填「無」} |
+| lessons-learned 對應段 | {`P:\MEMORY\knowledge\lessons-learned.md` 對應段落標題，無則填「無對應段」} |
+| 知識庫進度 | {`P:\MEMORY\projects/{family}/status.md` Current Focus，不可用時填「P:\MEMORY 不可用」} |
+
 ### 開放問題
 {若無，填「無」。有則每條一行：`Q{n}: {問題描述}（影響：{哪個步驟受阻}）`}
 

@@ -20,7 +20,7 @@ When a request lacks clarity — whether missing file paths, business rule conte
 - Apply in any workspace; detect project structure before routing.
 - Local project instructions, specs, and source code are the primary authority.
 - Use web search only when local specs are insufficient or silent on a topic.
-- `P:\MEMORY` is background context only. If unavailable, do not block work.
+- `P:\MEMORY` lessons-learned 對應段為 Step 0 **必查項**；不可用時明文記錄「P:\MEMORY 不可用」後繼續，不阻塞。
 
 ## Knowledge Sources (priority order)
 
@@ -38,3 +38,6 @@ Preflight output must include:
 - candidate service or types
 - missing information (and whether resolved via web search)
 - next step recommendation
+- **適用 skills**（`~/.claude/skills/` 中與本任務相關者，無則填「無」）
+- **lessons-learned 對應段**（`P:\MEMORY\knowledge\lessons-learned.md` 對應段落標題，無則填「無對應段」）
+- **知識庫進度**（`P:\MEMORY\projects/{family}/status.md` Current Focus，不可用時填「P:\MEMORY 不可用」）
