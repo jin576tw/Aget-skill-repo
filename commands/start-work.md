@@ -209,10 +209,11 @@ void acXX_method_condition() { /* Given / When / Then */ }
 當本 command 由 `/goal` 迴圈驅動（通常由 `/start-goal` 產生的 Goal Contract 啟動）：
 
 1. **STOP gate 優先於 goal 推進**：三個 STOP gate（`WAITING_FOR_OQ_CONFIRMATION`、`WAITING_FOR_PLAN_CONFIRMATION`、`READY_FOR_ACCEPTANCE`）視同 Human Gate — 到達時輸出 `GOAL_NEEDS_HUMAN_GATE` 暫停等待使用者，**不得為了讓 evaluator 判定達成而跳過確認**。
-2. **證據落盤**：每完成一條 AC，orchestrator append 一行至工作目錄 `goal-evidence.md`：`| R{輪次} | AC-XX | {signal} | R:{rubric}/20 | {下一步} |`，防止長迴圈 context compaction 後失憶。
+2. **證據落盤**：每完成一條 AC，orchestrator append 一行至工作目錄 `goal-evidence.md`：`| R{輪次} | AC-XX | {signal} | R:{rubric}/20 | {reviewer 報告路徑} | {下一步} |`，防止長迴圈 context compaction 後失憶；報告路徑是信號的審計錨點。
 3. **品質介面 = compact signal**：`/goal` evaluator 只讀對話輸出、不讀檔案。`@code-reviewer` 的 rubric 分數（`R:{總分}/20`）浮上信號即為 loop 的機器可驗證停止條件（如「rubric 總分 ≥16」）。
 4. **不產出 per-worker handoff 檔**（`handoff-*.md`、`state.json`）：evaluator 讀不到磁碟檔案，且逐 worker 讀寫 handoff 會把內容灌回 orchestrator context，違反 compact-signal 原則、徒增 token 成本。單一 `goal-evidence.md` ledger 已滿足「狀態寫磁碟」。
 5. **Checker 不疊加**：`@code-reviewer`（rubric）與 `gate-keeper`（DoD）即為 Goal Contract 的 Checker，goal 層不再另 spawn 第二層 reviewer 重審同一份證據。
+6. **信號不可代打**：orchestrator 只能**原文轉述** `@code-reviewer` 回傳的信號行，不得自行產生、修改或省略 R 分數；未實際 spawn reviewer 的輪次不得出現 R 信號——orchestrator 同時協調 maker，代打信號即球員兼裁判。
 
 ---
 
