@@ -69,6 +69,28 @@ await page.route('**/api/search', (route) =>
 
 See [auth-mock.md](auth-mock.md) for authentication bypass patterns.
 
+## Web Worker Mocking
+
+See [worker-mock.md](worker-mock.md) — Blob URL SecurityError、uid echo 靜默失敗、worker 純函式測試策略、真實降級路徑驗證。
+
+## Component State Injection（Angular）
+
+下拉選單等由 API mock 填充的資料，若因路由時序或 `forkJoin` 未完成導致 mock 沒生效，改在 `page.evaluate()` 直接注入元件屬性，不依賴 API 時序：
+
+```typescript
+await page.evaluate(() => {
+  const el = document.querySelector('app-my-component');
+  const comp = (window as any).ng.getComponent(el);
+  comp.caseStatusList = [...];
+  comp.cdr?.detectChanges?.();
+});
+```
+
+## Dev Server 生命週期
+
+- **先探測、確認、必要時自啟、自己開的自己收**：(1) 探測常用 port（4200→4203），比對頁面 `<title>` 是否為目標 app——**port 可能被別的 app 佔用**，症狀是選擇器逾時 + snapshot 顯示 404 頁；(2) 未找到則自行啟動（指定空閒 port）並記錄；(3) 結束後只清理自己啟動的 server。
+- 測試時以 `PW_BASE_URL` 之類環境變數指定實際 port，不寫死 4200。
+
 ## Test Report Format
 
 See [report-template.md](report-template.md) for standardized test report format.
@@ -84,4 +106,4 @@ See [layout-assertions.md](layout-assertions.md) for CSS property assertions (`t
 - Use `test.describe` to group by page/feature
 - Test names: `{scenario} — {expected behavior}` in project language
 - Fill → Interact → Assert order for form testing
-- If dev server is not running (`ECONNREFUSED`), stop and notify user
+- Dev server 未啟動（`ECONNREFUSED`）時依「Dev Server 生命週期」節自行探測/啟動，僅在無法啟動時才停下通知使用者

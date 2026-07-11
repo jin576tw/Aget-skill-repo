@@ -22,6 +22,7 @@ description: 產生 BSD 測試報告 docx 文件，支援任意票號格式（BM
 - **截圖標籤**：在截圖前加上情境說明，如「唯讀模式份數顯示（純文字）：」、「編輯模式份數可編輯（number input）：」
 - **後端處理標註**：涉及中台/核心/API 的處理邏輯，以括號標註請後端補充
 - **文件名稱使用全稱**：如「保險契約個人資料異動申請書」而非縮寫
+- **變更項名稱須使用畫面定義的 `fieldName`**：Angular 專案的 form-tab `ng-template` 有 `fieldName` 屬性（如「客戶基本資料變更」），描述受影響項目時必須用這些名稱，不可自編結構描述。查法：`grep "fieldName=" src/.../form-tabXX.component.html`
 
 ## 撰寫角度
 
@@ -85,6 +86,11 @@ description: 產生 BSD 測試報告 docx 文件，支援任意票號格式（BM
 > - ✅ 所有 XML 寫入改用 PowerShell `[System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false))`
 > - ✅ 圖片尺寸讀取改用 node 並傳入 Windows 路徑（`C:/path/to/file.png`）
 > - ✅ 打包改用 PowerShell `[System.IO.Compression.ZipFile]::CreateFromDirectory()`
+>
+> **PowerShell 組裝函式陷阱**（更多見 `windows-shell-gotchas` skill）：
+> - ❌ 函式參數勿命名 `$pid`（保留變數，會取到 process ID 而非傳入值）；改用 `$docId`、`$itemId`
+> - ❌ 零參數函式呼叫勿加括號（`xblank()` parse error）；直接寫 `xblank`
+> - ❌ 多參數呼叫勿用逗號（`ximg('a','b')` 會把陣列塞給第一個參數）；用空格分隔 `ximg 'a' 'b'`
 
 ## 產生流程（8 步驟）
 
@@ -192,9 +198,12 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $outPath = "{OUTPUT_PATH}"   # 由 command 替換為實際路徑
 $outDir  = Split-Path $outPath -Parent
 if (!(Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir -Force }
-Move-Item "C:\tmp\{TICKET}_BSD.docx" $outPath -Force
+Copy-Item "C:\tmp\{TICKET}_BSD.docx" $outPath -Force
+Remove-Item "C:\tmp\{TICKET}_BSD.docx" -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force "C:\tmp\bsd-build"
 ```
+
+> ⚠️ 用 `Copy-Item` 而非 `Move-Item`：目標 docx 若已在 Word 中開啟（或被其他程序鎖定），`Move-Item` 拋 `IOException` 使整個腳本中止；複製失敗不影響來源檔完整性，來源清理放在後續步驟選擇性執行。
 
 ## 截圖模式
 

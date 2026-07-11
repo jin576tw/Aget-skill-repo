@@ -35,6 +35,10 @@ export class FeatureNameComponent implements OnInit, OnDestroy {
 
 See [component-patterns.md](component-patterns.md) for Injector pattern and service injection.
 
+## Form Value & Upgrade Gotchas
+
+See [form-value-gotchas.md](form-value-gotchas.md) — `<select>` 的 `[value]` 字串化陷阱與 `[ngValue]` 對照表、空字串合法值的 `== null` 驗證規則、非 ISO 日期字串陷阱、ng-bootstrap 升版對應與 `$localize` polyfill。
+
 ## Key Conventions
 
 - All components are **Standalone** — no NgModule

@@ -12,10 +12,18 @@
 
 | 模式 | 適用 | 啟動成本 |
 |------|------|---------|
-| `@WebMvcTest` | 只測 Web 層，Service 以 `@MockBean` 替換 | 快，只啟動 MVC slice |
+| `@WebMvcTest` | 只測 Web 層，Service 以 `@MockitoBean` 替換 | 快，只啟動 MVC slice |
 | `@SpringBootTest(webEnvironment = MOCK)` | 測完整 Spring context（含 Service 實作） | 慢，但驗證更完整 |
 
 **原則**：Bug fix 驗證優先用 `@WebMvcTest`；若涉及多層 service 互動才升級到 `@SpringBootTest`。
+
+⚠️ **先確認專案測試風格**：部分專案（如 adp-policy）所有 `@SpringBootTest` 均 `@Disabled`（需完整 DB/Redis 環境），單元測試統一純 Mockito——這類專案**不應新增**未 `@Disabled` 的 `@SpringBootTest` 測試。動工前先看既有測試目錄的慣例。
+
+## `@MockitoBean` 取代 `@MockBean`（Spring Boot 3.4+）
+
+- `@MockBean`（spring-boot-test）自 Spring Boot 3.4 起 deprecated，正式替代品為 `@MockitoBean`（`org.springframework.test.context.bean.override.mockito.MockitoBean`）；3.4 下用舊註解仍可編譯但會警告，之後版本可能移除。
+- 標準組合：`@WebMvcTest(XxxController.class)` + `@MockitoBean XxxService service`。
+- `@WebMvcTest` 不啟動完整 ApplicationContext：Controller 直接注入的每個 Service 都要逐一 `@MockitoBean`，否則 context 載入失敗（`No qualifying bean of type 'XxxService'`）；但只需 mock **直接注入 Controller 的**，Service 內部再注入的下游不用。有 security filter 時連 `JwtService` 等也要 mock。
 
 ## @WebMvcTest 骨架
 
@@ -26,7 +34,7 @@ class FooControllerIT {
     @Autowired
     MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     FooService fooService;
 
     @Autowired
@@ -78,13 +86,14 @@ class FooControllerFullIT {
 
 ## 測試命名規則
 
-- 類別：`{Controller}IT.java`（Integration Test 後綴）
+- 類別：`{Controller}IT.java`（Integration Test 後綴，非 `Test`，區別 unit test）
+- 位置：IT 類與 Controller 同包（如 `src/test/java/.../http/`）
 - 方法：`it{NN}_{methodName}_{scenario}`
 - `@DisplayName`：`IT-XX: should {result} when {condition}`
 - `// IT-XX` 註解同 AC-tagging 規則
 
 ## Guardrails
 
-- `@MockBean` 只 mock 直接依賴的 service，不 mock repository（除非用 `@DataJpaTest`）
+- `@MockitoBean` 只 mock 直接依賴的 service，不 mock repository（除非用 `@DataJpaTest`）
 - 驗證 HTTP status + 關鍵 response body field；不窮舉所有欄位
 - 每個 IT case 對應 spec 的一條 AC 或一個 bug scenario
