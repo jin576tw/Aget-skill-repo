@@ -1,10 +1,29 @@
 ---
 description: 以需求變更 prompt 啟動 md 工作流，並在流程中用問答方式處理 DoR、/plan 確認、E2E harness 與驗收條件（DoD）收尾
+model: opus
 ---
 
 # /start-work
 
 以自由文字需求啟動 md 工作流。
+
+---
+
+## 🧠 Orchestrator 角色宣告
+
+**主會話 = Orchestrator（想），Subagents = Workers（做）。**
+
+主會話只負責：**規劃、拆解、委派、審核信號、整合結果**。除此之外的一切細節工作都委派出去。
+
+| 原則 | 規則 |
+|------|------|
+| 禁止 inline 實作 | 所有程式碼變更透過 `@implementer`（HARD RULE 3） |
+| 禁止讀 worker 產出全文 | 審核交給 `@code-reviewer`；orchestrator 只依 compact signal 判斷，不 Read worker 已寫入的檔案 |
+| 委派 prompt 精簡 | 只傳「AC 編號 + GWT 驗收標準 + 目標檔案路徑」，不得貼整份 spec 全文 |
+| 每個子任務有驗收標準 | 委派時必附該 AC 的 Given-When-Then，worker 依此自我驗證 |
+| 低成本 worker | 所有 subagents 均為 `model: sonnet`（見「Subagent 分工一覽」） |
+
+> **模型策略（Opus 想、Sonnet 做）**：本 command frontmatter 設 `model: opus` — Step 0–2（規劃、拆解、計畫）由 Opus 執行至 STOP gate #1。注意 model override **僅作用於當前 turn**，使用者確認計畫後回到 session 模型做信號路由；實作細節始終由 sonnet workers 承擔。後續 turns 的決策品質建議由 Advisor 補位（見「Advisor 升級點」）。
 
 ---
 
@@ -172,6 +191,38 @@ void acXX_method_condition() { /* Given / When / Then */ }
 
 ---
 
+## ⚡ 平行委派規則
+
+在無檔案衝突的前提下，盡量平行 spawn 加速（單一 message 內多個 Agent 呼叫）：
+
+| 位置 | 平行機會 | 條件 |
+|------|---------|------|
+| Step 7 | 四層判定同時命中多層時（如 UI E2E + 後端 MockMvc），平行 spawn `@test-writer` 與 `@backend-unit-test-writer` | 兩者寫入不同測試檔，無衝突 |
+| Step 3 循環 | `@code-reviewer` 審 AC-XX 的同時，平行 spawn 下一條 AC 的測試 writer 寫紅燈測試 | reviewer 唯讀、test writer 只寫新測試檔；若 reviewer 回 FAIL 需回修，暫停下一條 AC 的實作直到回修完成 |
+
+**不可平行**：同一 AC 內的「測試 → 實作 → review」必須依序（TDD 節奏）；多條 AC 的 `@implementer` 不得同時進行（避免同檔案寫入衝突）。
+
+---
+
+## 🎯 Advisor 升級點（選用，Anthropic API 限定）
+
+搭配 `/advisor` 讓強模型在決策點提供指導、便宜模型執行日常工作：
+
+- **建議配置**：`/model sonnet` + `/advisor fable`（需 v2.1.170+ 與 Fable 5 access）或 `/advisor opus`（需 v2.1.98+）
+- **Subagent 繼承 advisor 設定**：sonnet workers 卡關時同樣受益
+
+Advisor 由模型自行決定何時諮詢；以下時機應主動 consult：
+
+| 時機 | 原因 |
+|------|------|
+| Step 2 產出計畫前 | 架構決策點，計畫品質決定整體結果 |
+| 同一 AC 的 `@implementer` 連續 2 次回 `FAIL` | 卡關循環，需要獨立視角 |
+| Step 8 `READY_FOR_ACCEPTANCE` 前 | 宣告完成前的最終獨立檢查 |
+
+> 詳細用法見知識庫 `knowledge/claude-code-advisor.md`。
+
+---
+
 ## STOP gate 一覽
 
 | Gate | 位置 | 等待原因 |
@@ -186,15 +237,17 @@ void acXX_method_condition() { /* Given / When / Then */ }
 
 ## Subagent 分工一覽
 
-| Subagent | 何時啟動 | 載入 skill | Orchestrator 回傳信號 |
-|----------|----------|-----------|----------------------|
-| `@plan-formatter` | Step 0（固定執行） | preflight | Plan Input Report（精簡表格） |
-| `@spec-writer` | Step 1 / Step 8 | spec-conventions | `spec.md updated \| AC-XX` / `changelog updated` |
-| `@frontend-unit-test-writer` | Step 3（前端專案，自動偵測 Angular/Vue） | 內部偵測後載入 angular-testing 或 vue-testing | `AC-XX \| N/M red` |
-| `@backend-unit-test-writer` | Step 3（後端專案）/ Step 7（API endpoint 改動） | java-testing（含 MockMvc integration test） | `AC-XX \| N/M red` / `IT-XX \| N/M red` |
-| `@implementer` | Step 3 每個 AC | Angular：`angular-conventions`；Java：不載入 | `AC-XX PASS \| files` / `FAIL \| 原因` |
-| `@code-reviewer` | Step 3 每個 AC | review-checklist | `AC-XX PASS` / `FAIL \| H:N M:N` |
-| `@test-writer` | Step 7（UI 互動） | playwright-patterns | `{spec}.spec.ts \| PASS N/N` |
+| Subagent | model | 何時啟動 | 載入 skill | Orchestrator 回傳信號 |
+|----------|-------|----------|-----------|----------------------|
+| `@plan-formatter` | sonnet | Step 0（固定執行） | preflight | Plan Input Report（精簡表格） |
+| `@spec-writer` | sonnet | Step 1 / Step 8 | spec-conventions | `spec.md updated \| AC-XX` / `changelog updated` |
+| `@frontend-unit-test-writer` | sonnet | Step 3（前端專案，自動偵測 Angular/Vue） | 內部偵測後載入 angular-testing 或 vue-testing | `AC-XX \| N/M red` |
+| `@backend-unit-test-writer` | sonnet | Step 3（後端專案）/ Step 7（API endpoint 改動） | java-testing（含 MockMvc integration test） | `AC-XX \| N/M red` / `IT-XX \| N/M red` |
+| `@implementer` | sonnet | Step 3 每個 AC | Angular：`angular-conventions`；Java：不載入 | `AC-XX PASS \| files` / `FAIL \| 原因` |
+| `@code-reviewer` | sonnet | Step 3 每個 AC | review-checklist | `AC-XX PASS` / `FAIL \| H:N M:N` |
+| `@test-writer` | sonnet | Step 7（UI 互動） | playwright-patterns | `{spec}.spec.ts \| PASS N/N` |
+
+> 全部 workers 固定 `sonnet`，成本大宗由低成本模型消耗；Orchestrator 的規劃 turn 用 opus（frontmatter `model: opus`），決策點可再疊加 advisor。
 
 ---
 

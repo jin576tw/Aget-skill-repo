@@ -105,7 +105,7 @@ Commands 是可用 `/command-name` 直接呼叫的快捷命令。
 |------|---------|------|
 | **todo** | `/todo` | 從 P:\MEMORY 讀取待辦事項，依優先度分類輸出 |
 | **save** | `/save` | 保存 Session 至 P:\MEMORY 日誌（狀態更新、知識蒸餾、來源同步、必要時 wiki lint） |
-| **start-work** | `/start-work` | 以需求 prompt 啟動 Markdown 工作流（DoR→計畫→DoD） |
+| **start-work** | `/start-work` | 以需求 prompt 啟動 Markdown 工作流（DoR→計畫→DoD）；Orchestrator 模式 — 規劃 turn 用 opus，實作全數委派 sonnet workers，以 compact-signal 保持 context 精簡，支援平行委派與 advisor 升級點 |
 | **review-change** | `/review-change` | 對照規格 Code Review，通過後更新規格變更歷程 |
 | **print-work-status** | `/print-work-status` | 產生工作狀態週報，按業務領域與 JIRA 票號分組 |
 | **start-loop** | `/start-loop <意圖描述>` | 自動執行 loop-preflight 4 項預檢，輸出修正後的完整 `/loop` 指令供複製 |
