@@ -4,6 +4,9 @@ mcp-needs-auth-cache.json
 control.key
 pipe.key
 
+# ── 機器/專案專屬設定（見 settings.local.json.example）────
+settings.local.json
+
 # ── 執行時資料（非 source） ────────────────────────────
 cache/
 sessions/

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "P:\\MEMORY",
+      "C:\\Users\\<your-username>\\Desktop\\<project>\\<repo>"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -ExecutionPolicy Bypass -NonInteractive -File \"C:\\Users\\<your-username>\\.claude\\hooks\\pitfall-guard.ps1\""
+          }
+        ]
+      }
+    ]
+  }
+}
