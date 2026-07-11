@@ -154,7 +154,7 @@ void acXX_method_condition() { /* Given / When / Then */ }
 > ⚡ **Compact Signal（AC 循環）**：每個 subagent 完成後**只回傳一行信號**，禁止回傳代碼：
 > - 測試 writer → `AC-XX | N/M red`
 > - `@implementer` → `AC-XX PASS | file1, file2` 或 `AC-XX FAIL | {原因}`
-> - `@code-reviewer` → `AC-XX PASS` 或 `AC-XX FAIL | H:N M:N`
+> - `@code-reviewer` → `AC-XX PASS | R:{總分}/20` 或 `AC-XX FAIL | R:{總分}/20 | H:N M:N | 最低面向:{面向名}`（rubric 定義見 review-checklist skill；分數浮上對話是 /goal 迴圈可核對的品質介面）
 
 所有 驗收項 完成後直接進入 Step 7，**不在 驗收項 循環中間中斷**。
 
@@ -204,6 +204,18 @@ void acXX_method_condition() { /* Given / When / Then */ }
 
 ---
 
+## 🔁 Loop Engineering 整合（在 /goal 迴圈中執行時）
+
+當本 command 由 `/goal` 迴圈驅動（通常由 `/start-goal` 產生的 Goal Contract 啟動）：
+
+1. **STOP gate 優先於 goal 推進**：三個 STOP gate（`WAITING_FOR_OQ_CONFIRMATION`、`WAITING_FOR_PLAN_CONFIRMATION`、`READY_FOR_ACCEPTANCE`）視同 Human Gate — 到達時輸出 `GOAL_NEEDS_HUMAN_GATE` 暫停等待使用者，**不得為了讓 evaluator 判定達成而跳過確認**。
+2. **證據落盤**：每完成一條 AC，orchestrator append 一行至工作目錄 `goal-evidence.md`：`| R{輪次} | AC-XX | {signal} | R:{rubric}/20 | {下一步} |`，防止長迴圈 context compaction 後失憶。
+3. **品質介面 = compact signal**：`/goal` evaluator 只讀對話輸出、不讀檔案。`@code-reviewer` 的 rubric 分數（`R:{總分}/20`）浮上信號即為 loop 的機器可驗證停止條件（如「rubric 總分 ≥16」）。
+4. **不產出 per-worker handoff 檔**（`handoff-*.md`、`state.json`）：evaluator 讀不到磁碟檔案，且逐 worker 讀寫 handoff 會把內容灌回 orchestrator context，違反 compact-signal 原則、徒增 token 成本。單一 `goal-evidence.md` ledger 已滿足「狀態寫磁碟」。
+5. **Checker 不疊加**：`@code-reviewer`（rubric）與 `gate-keeper`（DoD）即為 Goal Contract 的 Checker，goal 層不再另 spawn 第二層 reviewer 重審同一份證據。
+
+---
+
 ## 🎯 Advisor 升級點（選用，Anthropic API 限定）
 
 搭配 `/advisor` 讓強模型在決策點提供指導、便宜模型執行日常工作：
@@ -244,7 +256,7 @@ Advisor 由模型自行決定何時諮詢；以下時機應主動 consult：
 | `@frontend-unit-test-writer` | sonnet | Step 3（前端專案，自動偵測 Angular/Vue） | 內部偵測後載入 angular-testing 或 vue-testing | `AC-XX \| N/M red` |
 | `@backend-unit-test-writer` | sonnet | Step 3（後端專案）/ Step 7（API endpoint 改動） | java-testing（含 MockMvc integration test） | `AC-XX \| N/M red` / `IT-XX \| N/M red` |
 | `@implementer` | sonnet | Step 3 每個 AC | Angular：`angular-conventions`；Java：不載入 | `AC-XX PASS \| files` / `FAIL \| 原因` |
-| `@code-reviewer` | sonnet | Step 3 每個 AC | review-checklist | `AC-XX PASS` / `FAIL \| H:N M:N` |
+| `@code-reviewer` | sonnet | Step 3 每個 AC | review-checklist | `AC-XX PASS \| R:{總分}/20` / `FAIL \| R:{總分}/20 \| H:N M:N \| 最低面向:{面向名}` |
 | `@test-writer` | sonnet | Step 7（UI 互動） | playwright-patterns | `{spec}.spec.ts \| PASS N/N` |
 
 > 全部 workers 固定 `sonnet`，成本大宗由低成本模型消耗；Orchestrator 的規劃 turn 用 opus（frontmatter `model: opus`），決策點可再疊加 advisor。
