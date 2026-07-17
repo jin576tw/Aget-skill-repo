@@ -11,6 +11,93 @@ description: jsPDF + jspdf-autotable 報表 PDF 產生慣例（多在 Angular We
 產生表格式報表 PDF 時反覆出現的版面問題與正確做法。核心原則：**先相信 autoTable 已經做掉的事，
 不要重造輪子**；表頭手動文字與 autoTable 表格是兩套不同的排版機制，混用時最容易出錯。
 
+## Quick Start：從零建立一支報表 PDF Worker
+
+### 1. 最小可動的 jsPDF + autoTable 範例
+
+```typescript
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+const doc = new jsPDF({
+  orientation: 'landscape',  // 'portrait' | 'landscape'
+  unit: 'mm',                // 座標/寬度單位，後續 cellWidth、margin 都用這個單位
+  format: 'a4',
+});
+
+autoTable(doc, {
+  columns: [
+    { header: '姓名', dataKey: 'name' },
+    { header: '金額', dataKey: 'amount' },
+  ],
+  body: [
+    { name: '王小明', amount: 1000 },
+    { name: '陳大文', amount: 2000 },
+  ],
+  startY: 20,               // 表格從哪個 Y 座標開始畫（上方留給標題/表頭文字）
+  margin: { left: 10, right: 10 },
+});
+
+const bloburl = doc.output('bloburl'); // 或 doc.save('file.pdf') 直接下載
+```
+
+`columns`/`body` 用 `dataKey` 對應是最推薦的寫法（比 `head`/`body` 陣列寫法更不容易欄位錯位）。
+
+### 2. 中文字型載入（一般字型，非難字字型）
+
+瀏覽器/Worker 內建字型不含中文，畫中文前必須手動載入字型檔：
+
+```typescript
+fetch('assets/font/YourFont.TTF')
+  .then((response) => response.arrayBuffer())
+  .then((fontData) => {
+    doc.addFileToVFS('YourFont.TTF', arrayBufferToBase64(fontData));
+    doc.addFont('YourFont.TTF', 'YourFont', 'normal');
+    doc.setFont('YourFont');
+    // ...接著才能呼叫 doc.text() / autoTable()
+  });
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+```
+
+若專案另有「難字」/罕見字擴充字型需求（例如姓名罕見字），那是另一套 FontFace API +
+外部字型伺服器降級的機制，屬於專案特定規範，不在本 skill 範圍內（core-ui 專案見
+`.github/instructions/pdf-worker.instructions.md`）。
+
+### 3. 包成 Angular Web Worker
+
+```typescript
+/// <reference lib="webworker" />
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+addEventListener('message', async ({ data }) => {
+  const req = data as YourPdfReq;         // { uid: string; data: YourRow[] }
+  // ...載字型、產生 doc、跑迴圈畫內容...
+  postMessage({
+    progress: req.data.length,
+    url: doc.output('bloburl').toString(),
+    uid: req.uid,
+  } as YourPdfRes);
+});
+```
+
+- Worker 檔要能被 `tsconfig.worker.json` 編到：檔名符合該 config 的 `include` glob
+  （常見慣例是 `*-worker.ts` 放在 `src/app/services/` 下），且該 tsconfig 的 `lib`
+  通常只有 `es2018`/`webworker`（**沒有 `dom`**）——worker 內不能用 `document`/`window`
+  等 DOM 全域，共用的純函式 util 檔也要避免依賴 DOM。
+- 主執行緒啟動 worker、顯示進度、觸發下載，通常包在一個共用對話框元件裡
+  （例如 core-ui 的 `ProgressBoxComponent`：傳入 `workerFactory`、監聽
+  `postMessage` 回報的 `progress`/`url`，`url` 有值時啟用下載按鈕），
+  不要在每個呼叫點各自 `new Worker()` 重複接線邏輯。
+
+---
+
 ## 兩套排版機制，不要搞混
 
 | 位置 | API | 是否自動換行 `\n` | 是否自動依寬度換行 |
