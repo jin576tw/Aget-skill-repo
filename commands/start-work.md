@@ -35,7 +35,9 @@ model: opus
 4. **實作完成後必須透過 `@code-reviewer` subagent**：每個 驗收項（AC）完成後強制執行。
 5. **驗收條件前必須由 `@spec-writer` 更新 spec 變更歷程**：所有 驗收項 完成後，spec.md 的「變更歷程」表格必須補上本次異動。
 6. **E2E 一律自動執行，不得以「詢問」為由延後或跳過**：Step 7 判定需要 E2E 時，直接啟動 `@test-writer`，不等使用者額外確認。「詢問使用者後沒回應/沒明確要求」不構成豁免理由。
-7. **Plan Input Report 三必填欄位**：`@plan-formatter` 回傳的 Plan Input Report 必須包含以下三欄，**缺任一欄不得進入 Step 2**：
+7. **專案慣例先行**：Step 0 必須讀取當前專案的 `CLAUDE.md` 開發規範段（分支策略、commit 格式、測試要求、驗收慣例），並在 Step 2 計畫中**明列本次適用的條款**。專案慣例寫在專案文件裡、不硬編在本指令中；本指令負責保證它們**每次都被讀到並套用**。
+   > 為何需要這條：曾稽核發現某專案 5 條已明文記錄的規則（建立工作分支、commit 格式、開發後本地測試、手動測試寫法、驗收後不留票務留言）**全部沒有落進實際執行的 prompt**——決策寫在記憶與 CLAUDE.md 就停在那裡。規則要生效，必須有人在執行路徑上主動去撈。
+8. **Plan Input Report 三必填欄位**：`@plan-formatter` 回傳的 Plan Input Report 必須包含以下三欄，**缺任一欄不得進入 Step 2**：
    - **適用 skills**：從 `~/.claude/skills/` 比對本任務，輸出候選清單；無適用填「無」。
    - **lessons-learned 對應段**：依任務類型引用 `P:\MEMORY\knowledge\lessons-learned.md` 段落標題；無對應填「無對應段」。
    - **知識庫進度**：`P:\MEMORY\projects/{family}/status.md` Current Focus 一行摘要；不可用時填「P:\MEMORY 不可用」。
@@ -57,11 +59,33 @@ model: opus
 ### Step 0 — Preflight & DoR
 
 1. 讀取使用者提供的需求變更 prompt。
-2. 啟動 `@plan-formatter` subagent，將需求正規化為目標畫面、候選 spec 與候選檔案，回傳 Plan Input Report（含三必填欄位：適用 skills、lessons-learned 對應段、知識庫進度；見 ⛔ HARD RULE 7）。
+2. 啟動 `@plan-formatter` subagent，將需求正規化為目標畫面、候選 spec 與候選檔案，回傳 Plan Input Report（含三必填欄位：適用 skills、lessons-learned 對應段、知識庫進度；見 ⛔ HARD RULE 8）。
 3. 以 `Skill` 工具 inline 載入 `gate-keeper`（非 subagent spawn）跑 DoR 檢查。
    - **若有關鍵缺口（缺 API contract、缺商業規則、缺 spec 依據）**：輸出 Open Questions，標示 `WAITING_FOR_OQ_CONFIRMATION`，**STOP**，等使用者補齊後才繼續。
    - 若 DoR 無缺口，直接繼續 Step 1，不中斷。
    - ⚡ **Compact Signal**：gate-keeper 僅輸出 `PASS` 或 `WAITING_FOR_OQ_CONFIRMATION: Q1, Q2...`，不展開 checklist 全文。
+
+### Step 0.5 — 工作分支 gate（⛔ HARD GATE，不得跳過）
+
+DoR 通過後、**任何 spec 或 code 異動之前**，必須確認工作分支正確。這是 hard gate：
+不論任務多小、不論「只改一行」，都不得略過。
+
+- 讀 Step 0 取得的專案 `CLAUDE.md` 分支規則（起始分支名稱、工作分支命名格式）。
+  **本指令不預設任何專案的分支名**——一切以專案文件為準；專案未定義則直接問使用者。
+- 對**每個**本次會被修改的 repo 各自檢查（多 repo 任務需逐一處理，不可只建其中一個）：
+  1. `git -C <repo> branch --show-current` 取得當前分支
+  2. 若已在本次任務**專屬**的工作分支上 → 通過
+  3. 若仍在**前一項任務的分支**、或在起始分支/主幹上 → 依專案規則從最新起始分支建立新分支：
+     `git fetch` → `git checkout <起始分支>` → `git pull` → `git checkout -b <本次工作分支>`
+  4. 若工作區有未提交變更 → **先 stash**（`git stash -u`），切換後再 `git stash pop`；
+     切勿直接 checkout 覆蓋
+- 在對話中輸出確認行（供稽核與 /goal evaluator 核對）：
+  `[BRANCH GATE] <repo>: <branch> ✅` 每個 repo 一行。
+- 無法判定正確分支名時 **STOP**，標示 `WAITING_FOR_BRANCH_CONFIRMATION`，問使用者後再繼續。
+
+> 為何是 hard gate：實務上發生過忘記建分支、直接在前一張票的分支上實作，事後只能
+> `git stash` → 切分支 → `stash pop` 補救，徒增風險。補救可行不代表可以省略——
+> 分支錯誤會污染前一張票的 diff，且往往到 code review 或 PR 階段才被發現。
 
 ### Step 1 — 更新 Spec（透過 `@spec-writer`，不中斷）
 

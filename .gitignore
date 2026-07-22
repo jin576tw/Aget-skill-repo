@@ -41,3 +41,6 @@ changelog.md
 # ── 備份 ──────────────────────────────────────────────
 *.backup.*
 .claude.json.backup*
+
+image-cache/
+telemetry/
