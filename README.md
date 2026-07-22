@@ -128,7 +128,6 @@ Commands 是可用 `/command-name` 直接呼叫的快捷命令。
 | **print-work-status** | `/print-work-status` | 產生工作狀態週報，按業務領域與 JIRA 票號分組 |
 | **start-loop** | `/start-loop <意圖描述>` | 自動執行 loop-preflight 6 項預檢（含 LOOP_* 狀態碼回報格式），輸出修正後的完整 `/loop` 指令供複製；週期巡檢定位，不推進開發目標 |
 | **start-goal** | `/start-goal <意圖描述>` | Loop Engineering 主要落地點 — 8 項預檢，輸出 Goal Contract（機器可驗證停止條件、斷路器、Human Gate）+ 修正後 `/goal` 條件 + 執行協議；停止條件不可驗證即回 GOAL_NEEDS_CONTRACT |
-| **adp-test-verify** | `/adp-test-verify` | ADP SIT 環境後端 Bug 手動驗收全流程 — 測試情境建立、AC 驗收、BSD 測報產出 |
 
 ---
 
