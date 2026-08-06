@@ -163,3 +163,6 @@ P:\MEMORY/
 - 若無法存取 `P:\MEMORY`，告知使用者並略過
 - 所有報告使用正體中文
 - 日誌時間戳使用 ISO 8601 含時區與毫秒：`YYYY-MM-DDThh:mm:ss.SSS+08:00`
+### Unified Session Metrics (schema v1.0)
+
+Treat supplied metrics as optional best-effort metadata. Append only Provider, Session, Period, Tokens, Cost, Source, and Confidence. Preserve unavailable values and continue all other Memory updates.

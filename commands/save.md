@@ -49,3 +49,4 @@ Steps:
    - 若使用者要求不要 push，只建立本地 commit 並回報目前 branch ahead 狀態
    - 若 git push 失敗（網路或權限），記錄錯誤訊息並繼續，不阻塞流程
 10. Reply with `Memory has updated!` when done.
+Before invoking honey, run the shared best-effort collector at C:\Users\003689\.agents\skills\save\session-metrics.cjs and append only its common Session Metrics block. Collector failures must not block Memory updates; never persist transcript, prompt, response, code, credentials, or cache contents.
