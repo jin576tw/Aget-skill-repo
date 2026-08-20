@@ -1,6 +1,6 @@
 ---
 name: honey
-description: '跨專案知識庫管理 — 讀寫 P:\MEMORY Obsidian Vault。Use when: session start, session end, 結束, 收工, close session, end session, 更新知識庫, update journal, 記錄決策, sync index, 索引同步。'
+description: '跨專案知識庫與 handover 管理 — 讀寫 P:\MEMORY Obsidian Vault。Use when: session start, session end, handover, 跨 session 交接, 結束, 收工, close session, end session, 更新知識庫, update journal, 記錄決策, sync index, 索引同步。'
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
@@ -23,6 +23,8 @@ model: sonnet
 P:\MEMORY/
 ├── memory.md                    ← 唯一入口（AI 必讀第一個檔案）
 ├── AGENTS.md                    ← agent-facing schema（薄規則，指回 memory.md）
+├── handovers/
+│   └── handovers.md             ← 跨 session 暫存層契約與 workspace key 規則
 ├── raw/                         ← 原始來源層（不可變；讀取證據，不改寫）
 ├── sources/
 │   └── sources.md               ← 來源 catalog（來源 ID、位置、蒸餾狀態）
@@ -65,13 +67,14 @@ P:\MEMORY/
 ### 1. Session 開始 — 讀取上下文
 
 1. 讀取 `P:\MEMORY\memory.md` 取得導航索引、快速指南與「常見陷阱」。
-2. 若存在，讀取 `P:\MEMORY\AGENTS.md` 取得 agent-facing schema、layer rules 與寫入規則。
-3. 讀取 `P:\MEMORY\knowledge\knowledge.md`，再依任務類型補讀 `conventions.md`、`domain-map.md`、`workflow-map.md`、`lookup-map.md`、`lessons-learned.md` 等必要知識。
-4. 根據當前工作區判斷 project family（Core / PA / POS / ESP / ADP / SDD）；若已知 leaf project，如 PA-UI、POS-API，先回推到對應 family。
-5. 讀取 `P:\MEMORY\projects/{family}/{family}.md`。
-6. 讀取 `P:\MEMORY\projects/{family}/status.md`（含 Related Lessons）。
-7. 若已鎖定子專案，再讀取 `P:\MEMORY\projects/{family}/{leaf}.md`。
-8. 回報工作狀態（Current Focus / Next Actions / Blocked）與相關教訓。
+2. 讀取 `P:\MEMORY\handovers\handovers.md`，計算目前 workspace key；匹配 handover 存在時優先讀取。當前使用者要求永遠高於舊 handover，讀取後不刪除該檔。
+3. 若存在，讀取 `P:\MEMORY\AGENTS.md` 取得 agent-facing schema、layer rules 與寫入規則。
+4. 讀取 `P:\MEMORY\knowledge\knowledge.md`，再依任務類型補讀 `conventions.md`、`domain-map.md`、`workflow-map.md`、`lookup-map.md`、`lessons-learned.md` 等必要知識。
+5. 根據當前工作區判斷 project family（Core / PA / POS / ESP / ADP / SDD）；若已知 leaf project，如 PA-UI、POS-API，先回推到對應 family。
+6. 讀取 `P:\MEMORY\projects/{family}/{family}.md`。
+7. 讀取 `P:\MEMORY\projects/{family}/status.md`（含 Related Lessons）。
+8. 若已鎖定子專案，再讀取 `P:\MEMORY\projects/{family}/{leaf}.md`。
+9. 回報工作狀態（Current Focus / Next Actions / Blocked）與相關教訓。
 
 ### 2. Session 結束 — 更新知識庫
 
@@ -110,7 +113,19 @@ P:\MEMORY/
 8. 向使用者摘要本次成果與下次待辦。
 9. 顯示 `Memory has updated!`。
 
-### 3. 更新 conventions / decisions
+### 3. Handover 模式 — 只寫跨 session 暫存
+
+只有 `/handover` 或明確要求 handover 時才進入此模式。此模式與 `/save` 互斥，不執行 Session 結束協議，也不收集 session metrics。
+
+1. 讀取 `P:\MEMORY\handovers\handovers.md`，依其唯一演算法解析 current workspace、workspace key 與目標檔 `P:\MEMORY\handovers\{workspace-key}.md`。
+2. 依目前 session 事實與工作區狀態，完整覆寫目標檔；固定包含「工作目標、已完成事項、目前狀態、Session 內決策與限制、異動檔案、驗證結果、下一步、阻塞與待確認事項」八段，無內容填「無」。
+3. 寫入白名單只有該目標 handover 檔。禁止修改 journal、project status、todo、knowledge、sources、raw、`memory.md` 或任何其他 Vault 檔案。
+4. 禁止保存 transcript、完整程式碼、session metrics、token、帳密、內部 IP、正式環境資訊、個資、連線字串或可重用知識蒸餾。
+5. 保存寫入前的 working tree 與 staged paths；只 `git add` 目標檔，並以 `git commit --only -m "docs: handover {workspace-key}" -- handovers/{workspace-key}.md` 排除既有 staged 內容。禁止 reset、checkout 或清除使用者 index。
+6. 驗證必填段落、workspace key 與 `git show --name-only --format= HEAD`；commit 必須只含目標檔且既有 staged paths 不變，才可 push。無 diff 時回報 `NO_DIFF` 並跳過 commit/push。
+7. 回報 workspace key、目標路徑、驗證結果、commit hash 與 push 結果。
+
+### 4. 更新 conventions / decisions
 
 當有跨專案通用的新慣例或架構決策時：
 
@@ -118,7 +133,7 @@ P:\MEMORY/
 - 架構決策 → 在 `P:\MEMORY\decisions/` 建立新 ADR（參考 `_template.md`）。
 - 規格工作流 → 更新 `P:\MEMORY\knowledge\spec-kit.md`。
 
-### 4. 索引同步
+### 5. 索引同步
 
 比對專案原始碼與 Vault 內容，確保：
 
@@ -129,7 +144,7 @@ P:\MEMORY/
 - 若專案內 `CLAUDE.md`、`.github/copilot-instructions.md`、slash commands 或 agent 定義有引用 `P:\MEMORY` 舊路徑，需一併同步。
 - 若 Vault 與原始碼不一致，以原始碼為準並更新 Vault。
 
-### 5. 來源 catalog 與 raw layer
+### 6. 來源 catalog 與 raw layer
 
 - `P:\MEMORY\raw\` 是不可變原始來源層；可讀取、可新增新來源檔，但不可改寫既有來源內容。
 - `P:\MEMORY\sources\sources.md` 記錄來源 ID、日期、類型、位置、關聯頁、狀態與簡短備註。
