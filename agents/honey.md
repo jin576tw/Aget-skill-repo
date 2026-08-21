@@ -66,8 +66,15 @@ P:\MEMORY/
 
 ### 1. Session 開始 — 讀取上下文
 
+#### 執行防護（每次必須遵守）
+
+- 開始前先回報 `[honey 1/4] preflight`；四階段固定為 `preflight`、`read/write`、`verify`、`git`。每完成一個檔案或指令，回報目前路徑、已耗時與下一步。
+- 階段上限：preflight/read 60 秒、write/verify 90 秒、每個 Git 指令 60 秒；工具支援 timeout 時必須設定。連續 30 秒沒有可見進度就停止當前操作，回報 `TIMEOUT`，不可無限重試。
+- 寫入前保存 `git status --short`；寫入後執行 `git status --short -- ':!.obsidian/'`。沒有本次預期 diff 時立即回報 `NO_DIFF`，跳過 add/commit/push。
+- 遇到一次階段逾時或第二次存取失敗，立即交由主流程接管：只帶有限檔案清單、保留既有不相關變更、先做唯讀檢查，再以工作區 patch + `git -C P:\MEMORY apply --check` 驗證後套用。禁止 reset/checkout；接管後狀態只能是 `DONE`、`NO_DIFF` 或 `BLOCKED`。
+
 1. 讀取 `P:\MEMORY\memory.md` 取得導航索引、快速指南與「常見陷阱」。
-2. 讀取 `P:\MEMORY\handovers\handovers.md`，計算目前 workspace key；匹配 handover 存在時優先讀取。當前使用者要求永遠高於舊 handover，讀取後不刪除該檔。
+2. 讀取 `P:\MEMORY\handovers\handovers.md`，計算目前 workspace-prefix；同時列出並讀取舊版 `{workspace-prefix}.md` 與所有新版 `{workspace-prefix}--*.md`。逐份核對工作目標，找到相符任務才沿用其 task-slug；不可只讀單一精確檔名。當前使用者要求永遠高於舊 handover，讀取後不刪除任何匹配檔。
 3. 若存在，讀取 `P:\MEMORY\AGENTS.md` 取得 agent-facing schema、layer rules 與寫入規則。
 4. 讀取 `P:\MEMORY\knowledge\knowledge.md`，再依任務類型補讀 `conventions.md`、`domain-map.md`、`workflow-map.md`、`lookup-map.md`、`lessons-learned.md` 等必要知識。
 5. 根據當前工作區判斷 project family（Core / PA / POS / ESP / ADP / SDD）；若已知 leaf project，如 PA-UI、POS-API，先回推到對應 family。
@@ -111,19 +118,20 @@ P:\MEMORY/
    - 無延續價值 → 直接刪除
 7. 清理 session memory（`/memories/session/`）中不再需要的暫存筆記。
 8. 向使用者摘要本次成果與下次待辦。
-9. 顯示 `Memory has updated!`。
+9. 僅在狀態為 `DONE` 時顯示 `Memory has updated!`；`NO_DIFF` 顯示 `Memory already up to date (NO_DIFF)`；`TIMEOUT`/`BLOCKED` 必須列出階段、路徑、錯誤與接管結果，不得顯示成功訊息。
 
 ### 3. Handover 模式 — 只寫跨 session 暫存
 
-只有 `/handover` 或明確要求 handover 時才進入此模式。此模式與 `/save` 互斥，不執行 Session 結束協議，也不收集 session metrics。
+只有 `/handover` 或明確要求 handover 時才進入此模式。此模式與 `/save` 互斥，不執行 Session 結束協議，不寫入 `journal/log.md` 的正式 session metrics 累計。**例外**：可在 handover 檔案自己的「Session Metrics」段落記錄本次 session 的輕量快照（見下方第 3 點與 `handovers.md`「Session Metrics 段落規則」），僅供接續參考，不視為 durable 累計。
 
-1. 讀取 `P:\MEMORY\handovers\handovers.md`，依其唯一演算法解析 current workspace、workspace key 與目標檔 `P:\MEMORY\handovers\{workspace-key}.md`。
-2. 依目前 session 事實與工作區狀態，完整覆寫目標檔；固定包含「工作目標、已完成事項、目前狀態、Session 內決策與限制、異動檔案、驗證結果、下一步、阻塞與待確認事項」八段，無內容填「無」。
-3. 寫入白名單只有該目標 handover 檔。禁止修改 journal、project status、todo、knowledge、sources、raw、`memory.md` 或任何其他 Vault 檔案。
-4. 禁止保存 transcript、完整程式碼、session metrics、token、帳密、內部 IP、正式環境資訊、個資、連線字串或可重用知識蒸餾。
-5. 保存寫入前的 working tree 與 staged paths；只 `git add` 目標檔，並以 `git commit --only -m "docs: handover {workspace-key}" -- handovers/{workspace-key}.md` 排除既有 staged 內容。禁止 reset、checkout 或清除使用者 index。
-6. 驗證必填段落、workspace key 與 `git show --name-only --format= HEAD`；commit 必須只含目標檔且既有 staged paths 不變，才可 push。無 diff 時回報 `NO_DIFF` 並跳過 commit/push。
-7. 回報 workspace key、目標路徑、驗證結果、commit hash 與 push 結果。
+1. 讀取 `P:\MEMORY\handovers\handovers.md`，依其唯一演算法解析 current workspace 與 workspace-prefix；列出並讀取舊版 `{workspace-prefix}.md` 與所有新版 `{workspace-prefix}--*.md`。
+2. 依工作目標選擇 task-slug：只有目標相符時才沿用既有 slug；舊版無 suffix 檔視為 `main`；沒有相符檔案時選一個未占用的描述性 slug。若多份可能相符或既有 slug 的目標不一致，回報 `HANDOVER_NEEDS_TASK_SLUG` 並停止，確認前不得寫入。
+3. 記錄所選目標檔的 preflight SHA-256（不存在記為 `MISSING`）。執行一次 `node C:\Users\003689\.agents\skills\save\session-metrics.cjs all`，取本次 session 自己的 tokens/cost/duration；`confidence: fallback`、workspace 不匹配、或已知的 0 秒 `/branch` artifact 都必須如實標註「不可用＋原因」，不得臆測或省略。依目前 session 事實與工作區狀態產生內容；固定包含「工作目標、已完成事項、目前狀態、Session 內決策與限制、異動檔案、驗證結果、Session Metrics（本次 session，輕量）、下一步、阻塞與待確認事項」九段，無內容填「無」。
+4. 寫入前立即重算目標檔 SHA-256；若與 preflight 值不同，回報 `HANDOVER_CONCURRENT_UPDATE` 並停止，不得覆寫或自動合併。通過後才可完整覆寫所選 per-task handover。
+5. 寫入白名單只有該目標 handover 檔。禁止修改 journal、project status、todo、knowledge、sources、raw、`memory.md` 或任何其他 Vault 檔案；禁止保存 transcript、完整程式碼、帳密、內部 IP、正式環境資訊、個資、連線字串或可重用知識蒸餾（Session Metrics 段落的正規化 tokens/cost/duration 數字不受此限，見上方例外）。
+6. 保存寫入前的 working tree 與 staged paths；只 `git add` 目標檔，並以 `git commit --only -m "docs: handover {workspace-key}" -- handovers/{workspace-key}.md` 排除既有 staged 內容。禁止 reset、checkout 或清除使用者 index。
+7. 驗證必填段落、workspace-prefix、task-slug、完整 workspace key 與 `git show --name-only --format= HEAD`；commit 必須只含目標檔且既有 staged paths 不變，才可 push。無 diff 時回報 `NO_DIFF` 並跳過 commit/push。
+8. 回報 workspace-prefix、task-slug、完整 workspace key、目標路徑、衝突檢查、驗證結果、commit hash 與 push 結果。
 
 ### 4. 更新 conventions / decisions
 
@@ -175,9 +183,9 @@ P:\MEMORY/
 - 不改寫 `P:\MEMORY\raw\` 既有來源檔；來源變更時新增 dated copy
 - `memory.md` 只作入口索引，不放長篇規則或任務細節
 - 若 session 只做了瑣碎查詢，不強制更新 journal
-- 若無法存取 `P:\MEMORY`，告知使用者並略過
+- 若無法存取 `P:\MEMORY`，先做一次有界重試；仍失敗即標記 `BLOCKED` 並交由主流程接管，不得靜默略過或持續等待
 - 所有報告使用正體中文
 - 日誌時間戳使用 ISO 8601 含時區與毫秒：`YYYY-MM-DDThh:mm:ss.SSS+08:00`
 ### Unified Session Metrics (schema v1.0)
 
-Treat supplied metrics as optional best-effort metadata. Append only Provider, Session, Period, Tokens, Cost, Source, and Confidence. Preserve unavailable values and continue all other Memory updates.
+Treat supplied metrics as optional best-effort metadata. Append one identical block per provider with only Provider, Session, Workspace, Period, Duration, Tokens, Cost, Estimate Range, Source, and Confidence. Preserve unavailable values and continue all other Memory updates.
