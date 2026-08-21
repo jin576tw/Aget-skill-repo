@@ -232,8 +232,16 @@ function ConvertTo-SafeLine {
 
 function Invoke-GitChecked {
     param([Parameter(Mandatory)][string]$Repo, [Parameter(Mandatory)][string[]]$Arguments)
-    $output = & git -C $Repo @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "GIT_FAILED: git $($Arguments -join ' ') $($output -join $script:NL)" }
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = & git -C $Repo @Arguments 2>&1
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($exitCode -ne 0) { throw "GIT_FAILED: git $($Arguments -join ' ') $($output -join $script:NL)" }
     return @($output)
 }
 
@@ -426,11 +434,11 @@ try {
     $newBlock = [regex]::Replace($newBlock, '(?m)^-\s+Task-Revision:\s*\d+\s*$', "- Task-Revision: $newRevision", 1)
     $progressPattern = '(?s)<!-- START-PLAN:PROGRESS:' + [regex]::Escape($task) + ':BEGIN -->.*?<!-- START-PLAN:PROGRESS:' + [regex]::Escape($task) + ':END -->'
     $progress = [string]::Join($script:NL, @(
-        "<!-- START-PLAN:PROGRESS:$task:BEGIN -->",
+        "<!-- START-PLAN:PROGRESS:$($task):BEGIN -->",
         "- Updated: $updated",
         "- Summary: $safeSummary",
         "- Evidence: $safeEvidence",
-        "<!-- START-PLAN:PROGRESS:$task:END -->"
+        "<!-- START-PLAN:PROGRESS:$($task):END -->"
     ))
     $newBlock = [regex]::Replace($newBlock, $progressPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $progress }, 1)
 
