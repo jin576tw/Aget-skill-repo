@@ -125,13 +125,25 @@ P:\MEMORY/
 只有 `/handover` 或明確要求 handover 時才進入此模式。此模式與 `/save` 互斥，不執行 Session 結束協議，不寫入 `journal/log.md` 的正式 session metrics 累計。**例外**：可在 handover 檔案自己的「Session Metrics」段落記錄本次 session 的輕量快照（見下方第 3 點與 `handovers.md`「Session Metrics 段落規則」），僅供接續參考，不視為 durable 累計。
 
 1. 讀取 `P:\MEMORY\handovers\handovers.md`，依其唯一演算法解析 current workspace 與 workspace-prefix；列出並讀取舊版 `{workspace-prefix}.md` 與所有新版 `{workspace-prefix}--*.md`。
-2. 依工作目標選擇 task-slug：只有目標相符時才沿用既有 slug；舊版無 suffix 檔視為 `main`；沒有相符檔案時選一個未占用的描述性 slug。若多份可能相符或既有 slug 的目標不一致，回報 `HANDOVER_NEEDS_TASK_SLUG` 並停止，確認前不得寫入。
+2. 依工作目標選擇 task-slug：只有目標相符時才沿用既有 slug；舊版無 suffix 檔視為 `main`；沒有相符檔案時選一個未占用的描述性 slug。若候選檔含 `Handover-Type: plan-board`，一般 handover 模式不得選取或覆寫它；應改用下方 Plan-board 模式。若多份可能相符或既有 slug 的目標不一致，回報 `HANDOVER_NEEDS_TASK_SLUG` 並停止，確認前不得寫入。
 3. 記錄所選目標檔的 preflight SHA-256（不存在記為 `MISSING`）。執行一次 `node C:\Users\003689\.agents\skills\save\session-metrics.cjs all`，取本次 session 自己的 tokens/cost/duration；`confidence: fallback`、workspace 不匹配、或已知的 0 秒 `/branch` artifact 都必須如實標註「不可用＋原因」，不得臆測或省略。依目前 session 事實與工作區狀態產生內容；固定包含「工作目標、已完成事項、目前狀態、Session 內決策與限制、異動檔案、驗證結果、Session Metrics（本次 session，輕量）、下一步、阻塞與待確認事項」九段，無內容填「無」。
 4. 寫入前立即重算目標檔 SHA-256；若與 preflight 值不同，回報 `HANDOVER_CONCURRENT_UPDATE` 並停止，不得覆寫或自動合併。通過後才可完整覆寫所選 per-task handover。
 5. 寫入白名單只有該目標 handover 檔。禁止修改 journal、project status、todo、knowledge、sources、raw、`memory.md` 或任何其他 Vault 檔案；禁止保存 transcript、完整程式碼、帳密、內部 IP、正式環境資訊、個資、連線字串或可重用知識蒸餾（Session Metrics 段落的正規化 tokens/cost/duration 數字不受此限，見上方例外）。
 6. 保存寫入前的 working tree 與 staged paths；只 `git add` 目標檔，並以 `git commit --only -m "docs: handover {workspace-key}" -- handovers/{workspace-key}.md` 排除既有 staged 內容。禁止 reset、checkout 或清除使用者 index。
 7. 驗證必填段落、workspace-prefix、task-slug、完整 workspace key 與 `git show --name-only --format= HEAD`；commit 必須只含目標檔且既有 staged paths 不變，才可 push。無 diff 時回報 `NO_DIFF` 並跳過 commit/push。
 8. 回報 workspace-prefix、task-slug、完整 workspace key、目標路徑、衝突檢查、驗證結果、commit hash 與 push 結果。
+
+### 3.1 Plan-board 模式 — 共享計畫的原子狀態更新
+
+只有 `/start-plan` 建立/遷移共享計畫，或 `/start-work --task <PLAN-ID:TASK>` 更新 task 狀態時才進入此模式。Plan-board 是同一計畫所有 task 共用的一份 handover，不得套用一般 handover 的全檔覆寫與 Session Metrics 九段模板。
+
+1. 讀取 `start-plan` skill、`references/plan-board-template.md` 與 `scripts/plan-board.ps1`；Task ID 必須為 `{PLAN-ID}:{TASK}`。
+2. 建立新 board 前先呈現完整預覽並取得使用者明確確認。遷移舊 handover 時，只保留目標、決策、限制、完成證據、下一步與 blocker；排除 metrics、PID、暫存 log、內部 host/IP、個資與環境細節。
+3. 既有 board 的狀態變更只能呼叫 `plan-board.ps1 -Action Update`。腳本會用 Windows named mutex、plan/task revision 與 Contract SHA-256 驗證，並只修改 task row、task state、progress block 與 plan metadata。
+4. task 進入 `in_progress` 必須取得 Claim-ID；不同 claim 不得重複開工。只有使用者明確要求才可 takeover。
+5. 每個狀態變更使用 `-GitMode Auto`，只 commit/push 該 board；保留既有 staged paths並驗證 commit scope。Contract 變更不是狀態更新，必須回到 `/start-plan` 重新預覽與確認。
+6. 新建或遷移完成後執行 `Validate`；若驗證失敗、hash 不符或 workspace 不符，回報對應 `PLAN_BOARD_INVALID` / `TASK_CONTRACT_BLOCKED` 並停止。
+7. Plan-board 禁止 Session Metrics。`INTEGRATION` 必須是最後的 checker task；全部 task completed 時才可將 Plan-Status 自動轉為 completed。
 
 ### 4. 更新 conventions / decisions
 

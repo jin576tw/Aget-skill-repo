@@ -7,6 +7,20 @@ model: opus
 
 以自由文字需求啟動 md 工作流。
 
+## 最高優先：既有 plan task 模式
+
+當參數符合 `/start-work --task <PLAN-ID:TASK>` 時，**先執行本節並略過下方 Step 0–2 的重新 intake、spec 規劃與計畫確認**。Task ID 是完整識別碼，例如 `ESP-PM-0001-P01:BACKEND`；不可只接受看不出所屬計畫的流水號。
+
+1. 完整讀取 `~/.claude/skills/start-plan/SKILL.md`，並以其 `scripts/plan-board.ps1` 執行 `Resolve` 與 `Validate`。
+2. 共享 handover 必須符合目前 workspace、`Plan-ID`、task row、task block 與 `Contract-SHA256`；任一不一致即輸出 `TASK_CONTRACT_BLOCKED` 並停止。
+3. task 為 `completed` 時輸出 `TASK_ALREADY_COMPLETED`；依賴未完成時輸出 `TASK_DEPENDENCY_BLOCKED`；已有不同 claim 時輸出 `TASK_ALREADY_CLAIMED`。只有使用者明確要求接管時才可使用 `-Takeover`。
+4. 執行 `Update -NewStatus in_progress -GitMode Auto` 取得 Claim-ID。此狀態變更必須只 commit/push 該共享 handover，且不可改動既有 staged paths。
+5. 僅依 task 的鎖定 Contract 與 workspace instructions 執行；不得擴張到其他 task。依 Contract 指定的 worker/checker 與測試策略走下方對應 Step 3–8。
+6. 每次轉為 `blocked` 或 `completed` 都以同一 Claim-ID 執行 `Update -GitMode Auto`，附精簡 Summary 與可驗證 Evidence。不得用一般 handover 流程覆寫 plan-board。
+7. `INTEGRATION` task 必須由 checker 角色執行，驗證各 repo/task 的整體結果，不得由單一 maker 自我宣告完成。
+
+成功 claim 後輸出：`TASK_CLAIMED: <PLAN-ID:TASK> | claim=<Claim-ID>`，再開始實作。
+
 ---
 
 ## 🧠 Orchestrator 角色宣告

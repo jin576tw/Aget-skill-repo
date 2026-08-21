@@ -48,6 +48,14 @@ skill: preflight
 | lessons-learned 對應段 | {`P:\MEMORY\knowledge\lessons-learned.md` 對應段落標題，無則填「無對應段」} |
 | 知識庫進度 | {`P:\MEMORY\projects/{family}/status.md` Current Focus，不可用時填「P:\MEMORY 不可用」} |
 
+### 規格方向一致性
+| 項目 | 內容 |
+|------|------|
+| 已核准 spec 方向 | {摘要；無已核准 spec 填「無」} |
+| 本次需求方向 | {摘要} |
+| 判定 | 一致 / 衝突 / 無法判定 |
+| 證據 | {spec 路徑與章節；無則填「—」} |
+
 ### 開放問題
 {若無，填「無」。有則每條一行：`Q{n}: {問題描述}（影響：{哪個步驟受阻}）`}
 
@@ -61,6 +69,7 @@ skill: preflight
 - 所有路徑必須為可被 Read/Edit 直接使用的路徑（相對或絕對）
 - 「候選檔案」至少填 Spec 與 Component；無對應項目填「—」；不確定填「?（{原因}）」
 - 「開放問題」若有任何一條，main agent 應在 DoR gate 列出並 STOP
+- 「規格方向一致性」為必填；若已核准 spec 與本次需求方向衝突，必須在「開放問題」列為第一個關鍵問題，不可自行選邊或改寫 spec
 - 「下一步建議」必須是具體可執行的指令，不得只說「繼續」
 
 ## 注意事項

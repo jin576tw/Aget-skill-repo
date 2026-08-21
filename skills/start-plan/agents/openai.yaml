@@ -1,0 +1,4 @@
+interface:
+  display_name: "Start Plan"
+  short_description: "Plan work into one shared handover task board"
+  default_prompt: "Use $start-plan to split this work into executable sessions."

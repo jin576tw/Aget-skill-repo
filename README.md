@@ -67,6 +67,7 @@ Skills 是可組合的知識模組，透過 `/skill-name` 觸發或由 Claude �
 |-------|---------|------|
 | **spec-conventions** | 撰寫規格文件時 | EARS 語法、Given-When-Then、文件模板 |
 | **gate-keeper** | 檢查 DoR / DoD 時 | 定義完備條件、驗收條件、人工檢查點 |
+| **start-plan** | 工作需跨 repo、跨 session 或可拆成獨立驗證 task 時 | 建立單一共享 handover task board、可讀 Task ID、依賴、claim、原子狀態更新與最終 INTEGRATION checker |
 | **preflight** | 需求模糊或缺乏 spec 時 | 探索 spec、查詢業務規則、釐清需求再開始 |
 | **compact-signal** | Subagent 完成工作回傳時 | 定義 Subagent→Orchestrator 的標準回傳格式 |
 | **llm-wiki-maintainer** | 整理或維護知識資料夾時 | 將 markdown/Obsidian vault 對齊 raw sources / wiki / schema / ingest / query / lint 的 LLM Wiki 結構 |
@@ -106,7 +107,7 @@ Agents 是承載特定角色與能力的自訂代理程式，由主 Claude 透�
 | **code-reader** | 程式碼閱讀師 | 解析業務邏輯、架構、評估變更影響範圍 |
 | **code-reviewer** | 程式碼審查員 | 對照規格做純 Code Review，產出結構化驗收報告 |
 | **implementer** | TDD 最小實作者 | 依 failing tests 與 AC 做最小綠燈實作，不超前開發 |
-| **honey** | 跨專案知識與交接管理 | 正常模式管理 P:\MEMORY 工作日誌、知識蒸餾、來源 catalog 與 wiki lint；handover 模式依 workspace-prefix＋task-slug 分流，只覆寫目前任務線的交接檔，並在並行更新時停止 |
+| **honey** | 跨專案知識與交接管理 | 正常模式管理 P:\MEMORY 工作日誌、知識蒸餾、來源 catalog 與 wiki lint；handover 模式依 workspace-prefix＋task-slug 分流；plan-board 模式以 mutex、revision、contract hash 原子更新共享 task board |
 | **plan-formatter** | 需求 intake 路由 | 將自由文字需求正規化為結構化 Plan Input，定位相關 spec；已整合原 preflight 功能 |
 | **spec-writer** | 規格文件撰寫師 | 新增/修改 spec、EARS 規格、Given-When-Then 驗收條件 |
 | **spec-reviewer** | 規格審查評分員 | 對照真實原始碼逐項驗證規格的行號/方法名/程式碼片段，依 100 分制 rubric 五面向評分（門檻 80），產出 high/medium/low 分級發現；嚴格區分「規格缺漏」與「撰寫缺陷」，尊重使用者豁免項 |
@@ -125,7 +126,8 @@ Commands 是可用 `/command-name` 直接呼叫的快捷命令。
 | **todo** | `/todo` | 從 P:\MEMORY 讀取待辦事項，依優先度分類輸出 |
 | **save** | `/save` | 保存 Session 至 P:\MEMORY 日誌（狀態更新、知識蒸餾、來源同步、必要時 wiki lint） |
 | **handover** | `/handover` | 呼叫 `@honey` handover 模式，先掃描目前 workspace 的全部任務交接並選定 task-slug，再只保存該任務線並自動 commit/push；偵測同檔並行更新時停止，不更新 journal、status、todo、knowledge、sources 或 raw |
-| **start-work** | `/start-work` | 以需求 prompt 啟動 Markdown 工作流（DoR→計畫→DoD）；Orchestrator 模式 — 規劃 turn 用 opus，實作全數委派 sonnet workers，以 compact-signal 保持 context 精簡，支援平行委派與 advisor 升級點；code-reviewer 信號含 rubric 分數（R:X/20），在 /goal 迴圈中依「Loop Engineering 整合」節運作（STOP gate 優先、goal-evidence.md ledger、信號不可代打） |
+| **start-plan** | `/start-plan <需求>` | 唯讀研究並拆成一份共享 handover task board；確認後產生 `{PLAN-ID}:{TASK}`，支援 `--status`、舊 handover 整併與 `/start-work --task` 接續 |
+| **start-work** | `/start-work` | 以需求 prompt 啟動 Markdown 工作流（DoR→計畫→DoD）；`--task <PLAN-ID:TASK>` 可直接 claim 已確認的 plan task、略過重複規劃，並以原子狀態 commit/push 防止重複開工 |
 | **review-change** | `/review-change` | 對照規格 Code Review，通過後更新規格變更歷程 |
 | **print-work-status** | `/print-work-status` | 產生工作狀態週報，按業務領域與 JIRA 票號分組 |
 | **print-sd** | `/print-sd <需求描述或路徑>` | 產生工程師可直接開發的 SD 實作規格書；固化 8 條撰寫風格（表格優先、施工閘門表、EARS 表格化、驗收與測試整併、不用 AC-XX 編號、不產 E2E 章節、開放問題表、變更歷程表且行號須核實原始碼），三段流程 spec-writer 撰寫 → spec-reviewer 評分回圈（門檻 80/100，最多 3 輪）→ 詢問是否以 md-to-pdf 轉檔 |

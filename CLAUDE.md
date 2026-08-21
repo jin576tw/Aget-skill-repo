@@ -42,6 +42,14 @@
 - 專案知識庫無對應功能 → 確認是否需要先執行分析，再看原始碼
 - `lessons-learned` 有對應教訓段 → 必須在動手前讀完該段，確認已知問題
 
+## 多 Session / 多 Repo 計畫
+
+- 工作跨 repo、預期跨 session，或能拆成多個獨立驗證邊界時，先使用 `/start-plan`；規劃確認前保持唯讀。
+- 每個 plan 只建立一份 `Handover-Type: plan-board` 共享 handover。Task ID 使用 `{PLAN-ID}:{TASK}`，例如 `ESP-PM-0001-P01:BACKEND`。
+- 執行既有 task 使用 `/start-work --task <PLAN-ID:TASK>`；不得重新規劃或用一般 handover 覆寫 plan-board。
+- task 狀態由 start-plan updater 以 claim、Windows named mutex、revision 與 contract hash 保護；每次狀態變更只 commit/push 該 board。
+- 已核准 spec 與目前需求方向衝突時 DoR 必須停止，引用證據並一次只問一個關鍵問題。
+
 ## Session 結束
 - 當使用者說「結束」、「收工」、「close session」、「end session」、`/clear` 或 `/save` 時，若可存取 `P:\MEMORY\knowledge\conventions.md`，則依「Session 結束協議」執行：更新日誌、更新專案狀態、知識蒸餾、來源同步、必要時執行 `maintenance/wiki-lint.md`、三個月清理。若無法存取則略過。處理完成後顯示 `Memory has updated!`。
 - 若使用者明確要求不要 push，只建立本地 commit 或保留本地變更並回報狀態，不執行 git push。
