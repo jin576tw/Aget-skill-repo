@@ -22,7 +22,7 @@ Replace every `<placeholder>`. Use one task block per task and keep marker names
 | Done | Task | Status | Claim | Revision | Updated |
 |---|---|---|---|---:|---|
 | [ ] | BACKEND | ready | - | 0 | - |
-| [ ] | INTEGRATION | waiting | - | 0 | - |
+<!-- Optional INTEGRATION task: add only when end-to-end evidence is needed that no single task's own acceptance evidence can produce (shared/changed contract, cross-repo behavior or message-consistency requirement, shared runtime). Cross-repo/cross-task structure alone is not a trigger. -->
 
 <!-- START-PLAN:TASK:BACKEND:BEGIN -->
 ## Task: BACKEND
@@ -37,6 +37,7 @@ Replace every `<placeholder>`. Use one task block per task and keep marker names
 - Objective: <task objective>
 - Priority: P0
 - Depends-On: NONE
+- Execution-Workflow: governed-start-work
 - Execution-Mode: single-session
 - Session-Budget: 1 session
 - Non-Goals: <explicit exclusions>

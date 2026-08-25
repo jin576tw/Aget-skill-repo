@@ -1,5 +1,5 @@
 ---
-description: 將跨 repo 或多 session 工作拆成一份共享 handover task board，產生可直接交給 /start-work --task 的短 Task ID
+description: 將跨 repo 或多 session 工作拆成一份共享 handover task board，為每個 task 選擇 start-work 或 direct 執行路徑
 model: opus
 ---
 
@@ -17,11 +17,11 @@ model: opus
 
 1. 完整讀取 `~/.claude/skills/start-plan/SKILL.md` 與其指定的 reference。
 2. 規劃階段保持唯讀；只問一個會改變拆分或驗收方式的關鍵問題。
-3. Task ID 固定為 `{PLAN-ID}:{TASK}`，例如 `ESP-PM-0001-P01:BACKEND`。
+3. Task ID 固定為 `{PLAN-ID}:{TASK}`，例如 `ESP-PM-0001-P01:BACKEND`；每個 task 必須明確標記 `Execution-Workflow`（`governed-start-work` 或 `direct`）。
 4. 每個 plan 只使用一份 `Handover-Type: plan-board` 共享 handover；不可建立每 task 一檔。
-5. 每個 plan 必須含最後的 `INTEGRATION` checker task。
+5. 只有當某項端到端證據無法由任一 task 自身的驗收證據產生時（例如跨 task 共用且變動的契約/介面、跨 repo 行為或錯誤訊息一致性需求、共享 runtime、或其他明確要求的真實環境流程），plan 才建立最後的 `INTEGRATION` checker task；單純「跨 repo」或「跨 task」本身不是理由——常見的拆分結構不等於自動觸發條件。當各 task 對照未變動的契約即可獨立驗證時省略 `INTEGRATION`，但必須在預覽中明確說明哪個契約未變、為何各邊證據互相獨立，不可默默省略。
 6. 未收到明確確認時輸出 `WAITING_FOR_PLAN_CONFIRMATION` 並停止寫入。
-7. 寫入與狀態更新交由 Honey 的 plan-board mode；不得以一般 handover 全檔覆寫共享 board。
+7. 寫入與狀態更新交由 Honey 的 plan-board mode；不得以一般 handover 全檔覆寫共享 board。`governed-start-work` task 才產生 `/start-work --task`；`direct` task 不進入 start-work 的 Spec/TDD/review/DoD 流程，依 Locked Contract 直接執行，狀態仍以 `scripts/plan-board.ps1` 更新。
 
 ## 完成輸出
 
