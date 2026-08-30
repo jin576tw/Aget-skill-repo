@@ -12,5 +12,28 @@
     "additionalDirectories": [
       "/Users/jjin576tw/personal-memory"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/jjin576tw/.claude/hooks/pitfall-guard.mjs"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/jjin576tw/.claude/hooks/session-start-context.mjs"
+          }
+        ]
+      }
+    ]
   }
 }
