@@ -1,31 +1,16 @@
 {
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "input=$(cat); cwd=$(echo \"$input\" | jq -r '.workspace.current_dir // .cwd'); dir=$(basename \"$cwd\"); branch=$(git -C \"$cwd\" --no-optional-locks branch --show-current 2>/dev/null); used=$(echo \"$input\" | jq -r '.context_window.used_percentage // empty'); out=\"$dir\"; [ -n \"$branch\" ] && out=\"$out | $branch\"; [ -n \"$used\" ] && out=\"$out | ctx: $(printf '%.0f' \"$used\")%\"; printf \"%s\" \"$out\""
-  },
-  "enabledPlugins": {
-    "outlook@outlook-tools": true,
-    "code-analysis-package@code-analysis-package": true
-  },
-  "extraKnownMarketplaces": {
-    "outlook-tools": {
-      "source": {
-        "source": "github",
-        "repo": "gabrieldenny-del/outlook-extension"
-      }
-    },
-    "code-analysis-package": {
-      "source": {
-        "source": "directory",
-        "path": "C:\\Users\\003689\\Desktop\\code-analysis-package"
-      }
-    }
-  },
-  "autoUpdatesChannel": "latest",
+  "model": "claude-sonnet-5",
+  "advisorModel": "fable",
   "tui": "fullscreen",
   "agentPushNotifEnabled": true,
-  "model": "opus"
+  "env": {
+    "MEMORY_VAULT": "/Users/jjin576tw/personal-memory",
+    "JIRA_TOKEN_FILE": "/Users/jjin576tw/.claude/jira-token.txt",
+    "SLIDES_OUT": "/Users/jjin576tw/Desktop/Slides"
+  },
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/jjin576tw/personal-memory"
+    ]
+  }
 }

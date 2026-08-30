@@ -51,7 +51,7 @@ await expect(page.locator('.toast-warning')).not.toBeVisible();
 await page.screenshot({ path: 'evidence/ac01-pass.png' });
 ```
 
-共享 harness 路徑：`C:\Users\003689\Desktop\playwright-harness`
+共享 harness 路徑：`{PLAYWRIGHT_HARNESS}`
 
 ---
 

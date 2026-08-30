@@ -15,7 +15,7 @@ Accept one of these forms:
 - `start-plan --status <plan-id>` — read and summarize an existing plan board.
 - `start-plan --migrate-handovers <plan-id>` — consolidate user-approved legacy handovers after showing the source-to-target mapping.
 
-Read `P:\MEMORY\handovers\handovers.md`, `P:\MEMORY\AGENTS.md`, project instructions, relevant specs, and every matching handover before planning. Treat local specs and source as authoritative over Memory.
+Read `{MEMORY_VAULT}/handovers/handovers.md`, `{MEMORY_VAULT}/AGENTS.md`, project instructions, relevant specs, and every matching handover before planning. Treat local specs and source as authoritative over Memory.
 
 ## Planning Workflow
 

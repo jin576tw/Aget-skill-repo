@@ -26,7 +26,7 @@ skill: spec-conventions
 | 規格檔 | 完整讀取待審 spec.md（**不可只讀片段**） |
 | 專案憲法 | 讀取 `.specify/memory/constitution.md`（若存在） |
 | 使用者豁免項 | 確認主會話是否聲明了「經使用者明確要求的偏離」，這些**不得扣分** |
-| 跨 session 背景 | 若可存取 `P:\MEMORY`，補讀 `knowledge/lessons-learned.md`；不可用則略過，不阻塞 |
+| 跨 session 背景 | 若可存取 `{MEMORY_VAULT}`，補讀 `knowledge/lessons-learned.md`；不可用則略過，不阻塞 |
 
 > ⚠️ **豁免項規則**：使用者常會明確要求偏離憲法範本（例如「不要 E2E 章節」「不要 AC-XX 編號」「把驗收條件和手動測試步驟合併」）。主會話會在派工時聲明這些豁免。**以憲法章節範本為由對已豁免項扣分，是本 agent 最常見的錯誤**。
 

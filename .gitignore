@@ -44,3 +44,6 @@ changelog.md
 
 image-cache/
 telemetry/
+
+# ── macOS ─────────────────────────────────────────────
+.DS_Store

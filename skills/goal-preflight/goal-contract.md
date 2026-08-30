@@ -1,7 +1,7 @@
 # Goal Contract 模板與執行協議
 
 > goal-preflight 的 companion 檔。SKILL.md 負責 8 項預檢清單；本檔提供輸出時使用的 Goal Contract 模板、執行協議全文、狀態碼定義與正反範例。
-> 方法論依據：`P:\MEMORY\knowledge\loop-engineering.md`（Loop Contract、Maker/Checker Split、Circuit Breaker、Human-in-the-loop）。
+> 方法論依據：`{MEMORY_VAULT}/knowledge/loop-engineering.md`（Loop Contract、Maker/Checker Split、Circuit Breaker、Human-in-the-loop）。
 
 ## Goal Contract 模板
 

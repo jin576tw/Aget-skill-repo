@@ -1,21 +1,16 @@
 {
+  "_comment": "Template for the machine-local values the mirrored Aget-skill-repo toolkit needs. Claude Code does NOT load ~/.claude/settings.local.json (user scope is ~/.claude/settings.json only; settings.local.json is a project-level file). On a new machine, merge the `env` and `permissions.additionalDirectories` keys below into ~/.claude/settings.json and fill in absolute paths for that machine. The for-mac branch mirrors the desktop repo and tracks settings.json, so its committed copy carries this Mac's absolute paths; adjust them on any other machine.",
+  "env": {
+    "MEMORY_VAULT": "<absolute path to the knowledge vault this machine's honey/save/handover/todo target (Windows: P:\\MEMORY; this Mac: /Users/jjin576tw/personal-memory)>",
+    "JIRA_TOKEN_FILE": "<absolute path to the one-line Jira PAT file (Windows: P:\\jira-token.txt)>",
+    "SLIDES_OUT": "<absolute path for the ppt skill's output>",
+    "PLAYWRIGHT_HARNESS": "<absolute path to the shared Playwright harness, if any; omit if none>",
+    "WORK_REPOS_ROOT": "<parent dir of pos-ui / core-ui / pa-ui, if any; omit if none>",
+    "SESSION_METRICS_CMD": "<command that prints the shared Session Metrics block, if any; omit to make save/handover/honey skip that step>"
+  },
   "permissions": {
     "additionalDirectories": [
-      "P:\\MEMORY",
-      "C:\\Users\\<your-username>\\Desktop\\<project>\\<repo>"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash|PowerShell",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell.exe -ExecutionPolicy Bypass -NonInteractive -File \"C:\\Users\\<your-username>\\.claude\\hooks\\pitfall-guard.ps1\""
-          }
-        ]
-      }
+      "<same absolute path as env.MEMORY_VAULT>"
     ]
   }
 }

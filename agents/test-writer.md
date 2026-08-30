@@ -21,7 +21,7 @@ skill: playwright-patterns
 
 1. 先確認 Step 2 plan 是否要求 E2E
 2. 若目標專案已有 Playwright 環境，直接使用專案內環境
-3. 若目標專案沒有 Playwright，僅可在使用者已確認後切換到共享 harness：`C:\Users\003689\Desktop\playwright-harness`
+3. 若目標專案沒有 Playwright，僅可在使用者已確認後切換到共享 harness：`{PLAYWRIGHT_HARNESS}`
 4. 若使用者拒絕建立或安裝共享 harness，停止並回報「本次略過 E2E，需記錄理由」
 
 ### Step 1b：Dev Server 管理（⚠️ 必須遵守生命週期規則）
@@ -31,9 +31,9 @@ skill: playwright-patterns
 ```powershell
 # 依序嘗試 port，找到回應正確 app 的 port
 # 各專案目錄對應關係：
-#   pos-ui  → C:\Users\003689\Desktop\SDC01\pos\pos-ui
-#   core-ui → C:\Users\003689\Desktop\SDC01\core\core-ui
-#   pa-ui   → C:\Users\003689\Desktop\SDC01\pa\pa-ui
+#   pos-ui  → {WORK_REPOS_ROOT}/pos/pos-ui
+#   core-ui → {WORK_REPOS_ROOT}/core/core-ui
+#   pa-ui   → {WORK_REPOS_ROOT}/pa/pa-ui
 ```
 
 1. 取得目標專案的 `<title>` 標籤內容（從 `src/index.html` 讀取）
@@ -102,7 +102,7 @@ test.describe('{頁面} — {功能}', () => {
 ### Step 4：跑測試
 
 ```powershell
-cd "C:\Users\003689\Desktop\playwright-harness"
+cd "$PLAYWRIGHT_HARNESS"
 $env:PW_BASE_URL = "http://localhost:{port}"
 npx playwright test {test-file} --project=chromium --reporter=list
 ```

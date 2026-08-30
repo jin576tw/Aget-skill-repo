@@ -14,7 +14,7 @@ skill: preflight
 
 1. 讀取工作區 `CLAUDE.md` 取得專案結構與目錄慣例
 2. 定位目標畫面、候選 spec、元件、服務、型別
-3. 補全 `P:\MEMORY` 家族背景（可用時）
+3. 補全 `{MEMORY_VAULT}` 家族背景（可用時）
 4. 輸出 Plan Input Report，main agent 可直接依此路由至 Step 1
 
 詳細搜尋步驟與路由規則見 `preflight` skill（workflow.md）。
@@ -45,8 +45,8 @@ skill: preflight
 | 項目 | 內容 |
 |------|------|
 | 適用 skills | {`~/.claude/skills/` 中與本任務相關者，無則填「無」} |
-| lessons-learned 對應段 | {`P:\MEMORY\knowledge\lessons-learned.md` 對應段落標題，無則填「無對應段」} |
-| 知識庫進度 | {`P:\MEMORY\projects/{family}/status.md` Current Focus，不可用時填「P:\MEMORY 不可用」} |
+| lessons-learned 對應段 | {`{MEMORY_VAULT}/knowledge/lessons-learned.md` 對應段落標題，無則填「無對應段」} |
+| 知識庫進度 | {`{MEMORY_VAULT}/projects/{family}/status.md` Current Focus，不可用時填「{MEMORY_VAULT} 不可用」} |
 
 ### 規格方向一致性
 | 項目 | 內容 |

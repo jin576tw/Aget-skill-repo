@@ -19,7 +19,7 @@
 ## Step 7
 
 - 專案本身沒有 Playwright，但功能屬關鍵使用者旅程或整合結果驗證
-- 需詢問是否建立共享 harness：`C:\Users\003689\Desktop\playwright-harness`
+- 需詢問是否建立共享 harness：`{PLAYWRIGHT_HARNESS}`
 - 若使用者同意使用共享 harness，可再問是否協助安裝 Playwright 與瀏覽器
 
 ## Step 8

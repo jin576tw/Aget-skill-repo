@@ -5,7 +5,7 @@ description: Jira 票從接票到交付的完整流程（分支、commit、MR、
 
 # Ticket Workflow — 接票到交付
 
-> 原則：**link, don't embed**——本 skill 只保存跨專案通用的流程骨架與踩坑；專案特定值（分支名、環境、路徑）以知識庫 vault 為權威來源：`projects/{family}/status.md` 的 Decisions 段與 `knowledge/conventions.md`（vault 位置見全域 CLAUDE.md；Windows 常為 `P:\MEMORY`）。
+> 原則：**link, don't embed**——本 skill 只保存跨專案通用的流程骨架與踩坑；專案特定值（分支名、環境、路徑）以知識庫 vault 為權威來源：`projects/{family}/status.md` 的 Decisions 段與 `knowledge/conventions.md`（vault 位置見全域 CLAUDE.md；Windows 常為 `P:\MEMORY`，本機為 `{MEMORY_VAULT}`）。
 
 ## 主流程
 

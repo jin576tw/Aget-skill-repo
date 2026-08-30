@@ -25,7 +25,7 @@ description: Step 0 / Step 8 workflow gate skill. TRIGGER when 使用者需要�
 - 本 skill 只提供規則與輸出格式，不直接充當獨立 agent
 - 遇到會影響商業規則、API contract、資料流或測試預期的不明處時，不可自行假設
 - 已核准 spec 與目前需求方向衝突時，DoR 必須阻擋；一次只詢問一個會改變實作方向的關鍵問題
-- `P:\MEMORY` 只作為背景輔助，不可取代本地 spec、instructions 與原始碼
+- `{MEMORY_VAULT}` 只作為背景輔助，不可取代本地 spec、instructions 與原始碼
 - Step 7 是否建立共享 Playwright harness，必須以問答方式取得使用者確認
 - `/plan` 產出後必須先停在計畫確認點，得到使用者確認後才可進入 Step 3
 

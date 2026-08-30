@@ -1,6 +1,6 @@
 ---
 name: compact-signal
-description: Compact Signal Protocol — 定義 subagent 回傳 orchestrator 的格式規則。每個 subagent 完成後只回傳決策信號，工件留在磁碟。本 skill 完全自足，不依賴 P:\MEMORY。
+description: Compact Signal Protocol — 定義 subagent 回傳 orchestrator 的格式規則。每個 subagent 完成後只回傳決策信號，工件留在磁碟。本 skill 完全自足，不依賴 {MEMORY_VAULT}。
 ---
 
 # Compact Signal Protocol
@@ -26,5 +26,5 @@ Subagent 完成後：
 
 ## 自足性保證
 
-本 skill 不讀取、不依賴 `P:\MEMORY`。  
+本 skill 不讀取、不依賴 `{MEMORY_VAULT}`。  
 無論知識庫是否可達，此協議均正常運作。

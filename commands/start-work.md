@@ -53,8 +53,8 @@ model: opus
    > 為何需要這條：曾稽核發現某專案 5 條已明文記錄的規則（建立工作分支、commit 格式、開發後本地測試、手動測試寫法、驗收後不留票務留言）**全部沒有落進實際執行的 prompt**——決策寫在記憶與 CLAUDE.md 就停在那裡。規則要生效，必須有人在執行路徑上主動去撈。
 8. **Plan Input Report 三必填欄位**：`@plan-formatter` 回傳的 Plan Input Report 必須包含以下三欄，**缺任一欄不得進入 Step 2**：
    - **適用 skills**：從 `~/.claude/skills/` 比對本任務，輸出候選清單；無適用填「無」。
-   - **lessons-learned 對應段**：依任務類型引用 `P:\MEMORY\knowledge\lessons-learned.md` 段落標題；無對應填「無對應段」。
-   - **知識庫進度**：`P:\MEMORY\projects/{family}/status.md` Current Focus 一行摘要；不可用時填「P:\MEMORY 不可用」。
+   - **lessons-learned 對應段**：依任務類型引用 `{MEMORY_VAULT}/knowledge/lessons-learned.md` 段落標題；無對應填「無對應段」。
+   - **知識庫進度**：`{MEMORY_VAULT}/projects/{family}/status.md` Current Focus 一行摘要；不可用時填「{MEMORY_VAULT} 不可用」。
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-description: 顯示目前專案的待辦事項，從 P:\MEMORY 讀取並依優先度分類輸出（含摘要表格）
+description: 顯示目前專案的待辦事項，從 {MEMORY_VAULT} 讀取並依優先度分類輸出（含摘要表格）
 ---
 
 # /todo
@@ -8,8 +8,8 @@ description: 顯示目前專案的待辦事項，從 P:\MEMORY 讀取並依優�
 
 ## 資料來源
 
-- `P:\MEMORY\memory.md`：判斷專案族群
-- `P:\MEMORY\projects/{family}/status.md`：Next Actions、Blocked、待開發需求
+- `{MEMORY_VAULT}/memory.md`：判斷專案族群
+- `{MEMORY_VAULT}/projects/{family}/status.md`：Next Actions、Blocked、待開發需求
 
 ## 優先度判斷規則
 
@@ -23,8 +23,8 @@ description: 顯示目前專案的待辦事項，從 P:\MEMORY 讀取並依優�
 
 ## 執行步驟
 
-1. Read `P:\MEMORY\memory.md` — 從 workspace path 判斷專案族群（目前為 POS）。
-2. Read `P:\MEMORY\projects/{family}/status.md`。
+1. Read `{MEMORY_VAULT}/memory.md` — 從 workspace path 判斷專案族群（目前為 POS）。
+2. Read `{MEMORY_VAULT}/projects/{family}/status.md`。
 3. 取出 `Next Actions` 中所有未完成 `[ ]` 項目，跳過 `[x]` 已完成項目。
 4. 依優先度規則將每個項目分入 🔴 / 🟡 / 🟢 其中一組，並從 Release 狀態表推導目標版本。
 5. 取出 `Blocked` 所有項目。
@@ -77,5 +77,5 @@ description: 顯示目前專案的待辦事項，從 P:\MEMORY 讀取並依優�
 
 8. 若某優先度分組無項目，省略該分組（不輸出空標題）。
 9. 表格「說明」欄控制在 20 字以內，細節留給下方分組清單。
-10. 若 `P:\MEMORY` 無法存取，輸出：⚠️ 無法存取 P:\MEMORY，請確認磁碟是否已掛載。
+10. 若 `{MEMORY_VAULT}` 無法存取，輸出：⚠️ 無法存取 {MEMORY_VAULT}，請確認磁碟是否已掛載。
 11. 全部使用正體中文輸出。

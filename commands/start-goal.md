@@ -86,7 +86,7 @@ ARGUMENTS: $ARGUMENTS
 |------|------|
 | 適用 skills | {`~/.claude/skills/` 中相關 skill，無則填「無」} |
 | lessons-learned 對應段 | {對應段落標題，無則填「無對應段」} |
-| 知識庫進度 | {Current Focus，P:\MEMORY 不可用時填「不可用」} |
+| 知識庫進度 | {Current Focus，{MEMORY_VAULT} 不可用時填「不可用」} |
 ```
 
 若有 `❌`（第 6 項除外），在修正後條件中自動補齊缺少的欄位（推斷合理的 agent、補上停損子句等）。

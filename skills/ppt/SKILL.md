@@ -22,7 +22,7 @@ inclusion: manual
 
 ## 輸出目錄
 
-所有產出檔案統一放至：`C:\Users\003689\Desktop\Slides\`
+所有產出檔案統一放至：`{SLIDES_OUT}/`
 
 - 若目錄不存在，執行前先建立
 - 檔名依簡報標題自動命名（小寫、連字號，例如 `ai-sdlc-intro.pdf`）
@@ -46,14 +46,14 @@ inclusion: manual
 ### Step 3：建立輸出目錄
 
 ```bash
-mkdir -p "C:\Users\003689\Desktop\Slides"
+mkdir -p "$SLIDES_OUT"
 ```
 
 （Bash 工具執行，非 PowerShell 工具）
 
 ### Step 4：生成 MARP Markdown
 
-將投影片內容寫入 `C:\Users\003689\Desktop\Slides\<title>.md`。
+將投影片內容寫入 `{SLIDES_OUT}/<title>.md`。
 
 **MARP frontmatter 範本：**
 
@@ -139,8 +139,8 @@ npm install -g @mermaid-js/mermaid-cli
 
 ```bash
 # Step 5a-2：預處理，將 mermaid 區塊轉為 SVG <img> 標籤
-npx mmdc -i "C:\Users\003689\Desktop\Slides\<title>.md" \
-         -o "C:\Users\003689\Desktop\Slides\<title>_processed.md" \
+npx mmdc -i "$SLIDES_OUT/<title>.md" \
+         -o "$SLIDES_OUT/<title>_processed.md" \
          -e svg
 ```
 
@@ -157,17 +157,17 @@ marp --version 2>/dev/null || echo "USE_NPX"
 
 **PDF 模式：**
 ```bash
-marp --no-stdin "C:\Users\003689\Desktop\Slides\<title>.md" \
+marp --no-stdin "$SLIDES_OUT/<title>.md" \
      --pdf \
-     --output "C:\Users\003689\Desktop\Slides\<title>.pdf" \
+     --output "$SLIDES_OUT/<title>.pdf" \
      --allow-local-files
 ```
 
 **PPTX 模式：**
 ```bash
-marp --no-stdin "C:\Users\003689\Desktop\Slides\<title>.md" \
+marp --no-stdin "$SLIDES_OUT/<title>.md" \
      --pptx \
-     --output "C:\Users\003689\Desktop\Slides\<title>.pptx" \
+     --output "$SLIDES_OUT/<title>.pptx" \
      --allow-local-files
 ```
 
@@ -176,8 +176,8 @@ marp --no-stdin "C:\Users\003689\Desktop\Slides\<title>.md" \
 ### Step 7：清理暫存（若有 Mermaid 預處理）
 
 ```bash
-rm -f "C:\Users\003689\Desktop\Slides\<title>_processed.md"
-rm -f "C:\Users\003689\Desktop\Slides\<title>_processed"-*.svg
+rm -f "$SLIDES_OUT/<title>_processed.md"
+rm -f "$SLIDES_OUT/<title>_processed"-*.svg
 ```
 
 ### Step 8：驗證並回報

@@ -20,8 +20,8 @@ description: 變更審查 — 對照規格執行 Code Review，通過後更新�
 | 項目 | 內容 |
 |------|------|
 | **適用 skills** | 依本次變更類型比對 `~/.claude/skills/` 候選 skill |
-| **lessons-learned 對應段** | 依變更類型引用 `P:\MEMORY\knowledge\lessons-learned.md` 段落標題；無則填「無對應段」 |
-| **知識庫進度** | `P:\MEMORY\projects/{family}/status.md` Current Focus；不可用時填「P:\MEMORY 不可用」 |
+| **lessons-learned 對應段** | 依變更類型引用 `{MEMORY_VAULT}/knowledge/lessons-learned.md` 段落標題；無則填「無對應段」 |
+| **知識庫進度** | `{MEMORY_VAULT}/projects/{family}/status.md` Current Focus；不可用時填「{MEMORY_VAULT} 不可用」 |
 
 ---
 

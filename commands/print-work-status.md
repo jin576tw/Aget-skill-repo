@@ -1,5 +1,5 @@
 ---
-description: Print current work status from P:\MEMORY — grouped by project family and JIRA ticket
+description: Print current work status from {MEMORY_VAULT} — grouped by project family and JIRA ticket
 ---
 
 # /print-work-status
@@ -19,17 +19,17 @@ description: Print current work status from P:\MEMORY — grouped by project fam
 
 ## 資料來源
 
-- `P:\MEMORY\journal\log.md`：時間序工作日誌（篩選上周一至今日條目）
-- `P:\MEMORY\projects/{family}/status.md`：專案狀態與 Release 表
-- `P:\MEMORY\projects/{family}/{leaf}.md`：子專案靜態參考（按需）
+- `{MEMORY_VAULT}/journal/log.md`：時間序工作日誌（篩選上周一至今日條目）
+- `{MEMORY_VAULT}/projects/{family}/status.md`：專案狀態與 Release 表
+- `{MEMORY_VAULT}/projects/{family}/{leaf}.md`：子專案靜態參考（按需）
 
 ## 執行步驟
 
 Steps:
-1. Read `P:\MEMORY\memory.md` and identify the current project family from the workspace path.
-2. Read `P:\MEMORY\projects/{family}/{family}.md` and `P:\MEMORY\projects/{family}/status.md`.
-3. Read `P:\MEMORY\journal\log.md` and filter entries from last Monday to today (inclusive).
-4. Read leaf page `P:\MEMORY\projects/{family}/{leaf}.md` only when a specific leaf project context is needed.
+1. Read `{MEMORY_VAULT}/memory.md` and identify the current project family from the workspace path.
+2. Read `{MEMORY_VAULT}/projects/{family}/{family}.md` and `{MEMORY_VAULT}/projects/{family}/status.md`.
+3. Read `{MEMORY_VAULT}/journal/log.md` and filter entries from last Monday to today (inclusive).
+4. Read leaf page `{MEMORY_VAULT}/projects/{family}/{leaf}.md` only when a specific leaf project context is needed.
 5. Output results using the exact format below. Group by business domain + JIRA ticket. Each item is one short phrase (不超過10字) describing the work, followed by a dash and the status word.
 6. Use concise status words only: 已完成、已交付測試、測試中、處理中、待開發、待補測報.
 7. Output format (follow exactly):
@@ -53,5 +53,5 @@ Example output:
 
 8. If a JIRA ticket has multiple independent work items, list each as a separate numbered entry.
 9. Output in Traditional Chinese.
-10. If `P:\MEMORY` is unavailable, output: ⚠️ 無法存取 P:\MEMORY，請確認磁碟是否已掛載。
+10. If `{MEMORY_VAULT}` is unavailable, output: ⚠️ 無法存取 {MEMORY_VAULT}，請確認磁碟是否已掛載。
 11. If data is insufficient, explicitly state which records or project scopes are missing — do not fabricate progress.

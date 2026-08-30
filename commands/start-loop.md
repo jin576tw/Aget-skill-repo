@@ -68,7 +68,7 @@ ARGUMENTS: $ARGUMENTS
 |------|------|
 | 適用 skills | {`~/.claude/skills/` 中相關 skill，無則填「無」} |
 | lessons-learned 對應段 | {對應段落標題，無則填「無對應段」} |
-| 知識庫進度 | {Current Focus，P:\MEMORY 不可用時填「不可用」} |
+| 知識庫進度 | {Current Focus，{MEMORY_VAULT} 不可用時填「不可用」} |
 ```
 
 若有 ❌ 項目，在修正後指令中自動補齊缺少的欄位（推斷合理的 interval、補上停止條件與狀態碼要求等）。

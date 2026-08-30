@@ -1,6 +1,6 @@
 ---
 name: jira-fix-comment
-description: 依 Bug Fix 完成後的 spec.md 與 git 紀錄，產生並張貼「【Bug Fix 完成】」格式的 Jira 留言。TRIGGER when 使用者要求「留言到 Jira」「Jira 留言」「貼到 Jira 牌卡」「幫我留言這次修正」，且已有完成的 bug fix（spec.md + commit）。DO NOT TRIGGER 於 BSD 測報產出後（該情境依既有慣例不主動留言，見 P:\MEMORY feedback_no_jira_comment）除非使用者明確要求。
+description: 依 Bug Fix 完成後的 spec.md 與 git 紀錄，產生並張貼「【Bug Fix 完成】」格式的 Jira 留言。TRIGGER when 使用者要求「留言到 Jira」「Jira 留言」「貼到 Jira 牌卡」「幫我留言這次修正」，且已有完成的 bug fix（spec.md + commit）。DO NOT TRIGGER 於 BSD 測報產出後（該情境依既有慣例不主動留言，見 {MEMORY_VAULT} feedback_no_jira_comment）除非使用者明確要求。
 ---
 
 # Jira Bug Fix 留言產生器
@@ -22,7 +22,7 @@ description: 依 Bug Fix 完成後的 spec.md 與 git 紀錄，產生並張貼�
    - Commit hash（短碼）
    - Branch 名稱
    - 異動檔案清單與行號（若 spec 已有精確位置就優先用 spec）
-3. 若 session 過程有經歷除錯轉折（例如假設被推翻、多輪迭代才找到真因），從 spec 變更歷程或對話中萃取「最終根因」與「排除過程摘要」（**只寫最終結論，不要把每一輪失敗嘗試都寫進 Jira 留言**——Jira 留言面向團隊/PM，需要精簡結論；完整除錯過程留在 `P:\MEMORY\knowledge\lessons-learned.md`，不重複贴到 Jira）
+3. 若 session 過程有經歷除錯轉折（例如假設被推翻、多輪迭代才找到真因），從 spec 變更歷程或對話中萃取「最終根因」與「排除過程摘要」（**只寫最終結論，不要把每一輪失敗嘗試都寫進 Jira 留言**——Jira 留言面向團隊/PM，需要精簡結論；完整除錯過程留在 `{MEMORY_VAULT}/knowledge/lessons-learned.md`，不重複贴到 Jira）
 
 ### STEP 2 — 套用留言範本
 
@@ -56,7 +56,7 @@ Commit：`{commit_hash}`（branch: `{branch_name}`）
 1. 先把組好的留言內容完整輸出給使用者看（不要直接送出）
 2. 明確詢問使用者是否確認張貼（這是會被團隊看到的公開留言，不可未經確認就送出）
 3. 使用者確認後，用 `mcp__atlassian-jira-dc__jira_postIssueComment`（若工具尚未載入，先用 `ToolSearch` 搜尋 `select:mcp__atlassian-jira-dc__jira_postIssueComment`）張貼留言
-4. 張貼成功後回報留言連結或確認訊息；若 MCP 顯示未連線，比照 `P:\MEMORY\knowledge\jira-mcp.md` 的踩雷清單，提示使用者可執行 `/mcp` 重新連線
+4. 張貼成功後回報留言連結或確認訊息；若 MCP 顯示未連線，比照 `{MEMORY_VAULT}/knowledge/jira-mcp.md` 的踩雷清單，提示使用者可執行 `/mcp` 重新連線
 
 ## 注意事項
 

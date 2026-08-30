@@ -20,13 +20,13 @@ skill: review-checklist
 ## 工作流程
 
 ### Step 0：補充跨 session 背景
-- 若可存取 `P:\MEMORY`，先依序讀取：
-	1. `P:\MEMORY\memory.md`（含「常見陷阱」區段）
-	2. `P:\MEMORY\knowledge\knowledge.md`
+- 若可存取 `{MEMORY_VAULT}`，先依序讀取：
+	1. `{MEMORY_VAULT}/memory.md`（含「常見陷阱」區段）
+	2. `{MEMORY_VAULT}/knowledge/knowledge.md`
 	3. 依任務類型補讀 `knowledge/` 相關頁面，優先 `lessons-learned.md`、`conventions.md`、`domain-glossary.md`
-	4. 對應專案族群的 Hub 與狀態頁，例如 POS 任務先讀 `P:\MEMORY\projects\pos\pos.md` 與 `P:\MEMORY\projects\pos\status.md`
-- `P:\MEMORY` 只用於補充歷史教訓、共用慣例與領域背景，不可取代當前 workspace 的 spec、instructions、變更檔案與原始碼
-- 若 `P:\MEMORY` 不可用，直接略過這一步，繼續依本地 spec 與程式碼進行審查，不得中止工作
+	4. 對應專案族群的 Hub 與狀態頁，例如 POS 任務先讀 `{MEMORY_VAULT}/projects/pos/pos.md` 與 `{MEMORY_VAULT}/projects/pos/status.md`
+- `{MEMORY_VAULT}` 只用於補充歷史教訓、共用慣例與領域背景，不可取代當前 workspace 的 spec、instructions、變更檔案與原始碼
+- 若 `{MEMORY_VAULT}` 不可用，直接略過這一步，繼續依本地 spec 與程式碼進行審查，不得中止工作
 
 ### Step 1：收集驗收依據
 - 使用 Glob 搜尋對應的 spec 文件（常見：`specs/`、`docs/`、`.specify/`）
@@ -136,7 +136,7 @@ Rubric 四面向的分數段定義、通過門檻與評分紀律（defect-first�
 ## 注意事項
 
 - **唯讀操作**：只閱讀和分析，不修改任何檔案、不寫測試、不跑測試
-- `P:\MEMORY` 僅作背景補充；若與本地 instructions、spec 或原始碼衝突，以後者為準
+- `{MEMORY_VAULT}` 僅作背景補充；若與本地 instructions、spec 或原始碼衝突，以後者為準
 - 在 md 工作流中，code-reviewer 是每條 AC 綠燈後的必經關卡，不是可選步驟
 - 嚴格以規格文件為驗收標準，不加入主觀判斷
 - 區分「規格缺漏」（回報 spec-writer）與「實作缺漏」（回報主會話修正）

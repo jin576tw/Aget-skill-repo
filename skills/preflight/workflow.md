@@ -12,8 +12,8 @@
 1. Normalize the request into screen, section, action, fields, and constraints.
 2. Locate nearest spec, view, component, service, and type surface using routing info from Step 0.
    - 若使用者已提供精確路徑：直接在候選檔案欄填入並標注「使用者提供」，跳過搜尋。
-3. If `P:\MEMORY` is available, supplement with family-level background (conventions, lessons-learned, domain glossary).
-4. **知識補全（Web Search）** — 若 local spec 與 P:\MEMORY 對某個業務規則、框架行為或領域知識沉默，執行 web search：
+3. If `{MEMORY_VAULT}` is available, supplement with family-level background (conventions, lessons-learned, domain glossary).
+4. **知識補全（Web Search）** — 若 local spec 與 {MEMORY_VAULT} 對某個業務規則、框架行為或領域知識沉默，執行 web search：
    - 優先搜尋官方文件、框架 changelog、Angular 規範
    - 搜尋結果摘要納入「開放問題」或直接補入「功能範疇」說明
    - 標注來源（`[Web]`）與搜尋關鍵字，供 main agent 評估可信度
@@ -30,4 +30,4 @@
 
 ## Fallback Rule
 
-If `P:\MEMORY` is unavailable, continue in local fallback mode and rely on repo instructions, specs, and source code.
+If `{MEMORY_VAULT}` is unavailable, continue in local fallback mode and rely on repo instructions, specs, and source code.
