@@ -30,11 +30,19 @@ skill: review-checklist
 
 ### Step 1：收集驗收依據
 - 使用 Glob 搜尋對應的 spec 文件（常見：`specs/`、`docs/`、`.specify/`）
+- **反向核對 spec vs 已核准 SA**（見 review-checklist skill 的「Step 1.5：spec vs SA 反向核對」）——先確認 spec 本身忠實反映目前已核准的 SA，再往下看實作是否符合 spec；找不到落差才繼續，找到落差先回報 spec 問題
 - 了解驗收條件（快樂路徑 + 錯誤路徑）
 - 鎖定本輪正在處理的單一 `AC-XX`
 - 確認變更範圍（哪些檔案被新增/修改）
 
 ### Step 2：逐項審查
+
+#### spec vs SA 反向核對（優先於下列各項）
+- [ ] spec 的章節/版面順序與已核准 SA 一致
+- [ ] spec 的欄位定義與已核准 SA 一致
+- [ ] spec 的訊息文字與已核准 SA 一致
+- [ ] spec 的驗收條件與已核准 SA 一致
+- [ ] 無對應 SA 時，已在報告明寫理由，不是預設略過
 
 #### 功能完整性
 詳細清單請參考 review-checklist skill 的 functional.md
