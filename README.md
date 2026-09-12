@@ -2,6 +2,10 @@
 
 個人化的 Claude Code 工具集，包含 Skills、Agents、Commands，用於日常開發與工作自動化。
 
+## 開發中的設計
+
+[start-work-plugin：紀錄時機、handover 結案蒸餾與工具精簡](docs/recording-lifecycle.md)。此為待實作契約，不代表紀錄 hooks 已安裝。另見 [全工具設計審查](docs/tool-design-audit.md)。
+
 ---
 
 ## 目錄結構
@@ -18,7 +22,7 @@
 
 ---
 
-## Skills（32 個）
+## Skills（33 個）
 
 Skills 是可組合的知識模組，透過 `/skill-name` 觸發或由 Claude 自動判斷使用。
 
@@ -203,3 +207,5 @@ git push
 README.md 若有相應工具說明變動，請一併更新。
 
 自訂 SKILL.md 超過約 150–200 行時，把細節/範例拆到同資料夾的 companion reference 檔（如 `angular-conventions/form-value-gotchas.md`、`ticket-workflow/git-conventions.md`），SKILL.md 本身只留摘要與索引。docx/pdf/xlsx 等 Anthropic 官方隨附的 proprietary skill 不適用此守則，也不應被修改。
+
+最新 main 整合、工具調整與驗證範圍見 [main 整合紀錄](docs/main-integration.md)。
