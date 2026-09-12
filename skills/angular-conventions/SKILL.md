@@ -27,7 +27,7 @@ export class FeatureNameComponent implements OnInit, OnDestroy {
 }
 ```
 
-## Decorator Order
+## Decorator Order（專案未另定時的範例）
 
 `selector` → `standalone` → `imports` → `templateUrl` → `styleUrl` → `providers`
 
@@ -41,7 +41,7 @@ See [form-value-gotchas.md](form-value-gotchas.md) — `<select>` 的 `[value]` 
 
 ## Key Conventions
 
-- All components are **Standalone** — no NgModule
+- 新元件沿用專案架構；Standalone 範例不要求遷移既有 NgModule
 - Use `ReactiveFormsModule` for forms, not template-driven
 - TypeScript strict mode — no `any` type
 - 2-space indentation, max 120 characters per line

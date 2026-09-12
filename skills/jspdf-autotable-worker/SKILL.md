@@ -5,13 +5,17 @@ description: jsPDF + jspdf-autotable 報表 PDF 產生慣例（多在 Angular We
 
 # jsPDF + jspdf-autotable Worker 報表慣例
 
+## 完成目標
+
+產生符合需求且經實際渲染檢查的 PDF。以下 API 範例按需參考，具體呼叫順序只保留字型載入、排版計算與繪製等技術依賴，不要求固定開發步驟。
+
 ## Overview
 
 本 skill 整理在瀏覽器端（常見於 Angular Web Worker，`*-pdf-worker.ts`）用 jsPDF + jspdf-autotable
 產生表格式報表 PDF 時反覆出現的版面問題與正確做法。核心原則：**先相信 autoTable 已經做掉的事，
 不要重造輪子**；表頭手動文字與 autoTable 表格是兩套不同的排版機制，混用時最容易出錯。
 
-## Quick Start：從零建立一支報表 PDF Worker
+## 技術範例（按需使用）
 
 ### 1. 最小可動的 jsPDF + autoTable 範例
 
@@ -174,7 +178,7 @@ autoTable(doc, {
 ```
 
 把 277mm 依欄位語意（日期/案號類窄、名稱/備註類寬）按比例分配成固定 `cellWidth`，
-每欄都給明確數字，不要留 `'auto'`。
+需要可預測固定欄寬時每欄給明確數字，不使用 `'auto'`。
 
 ## `margin.left/right` 要跟表頭手動文字的起始 X 對齊
 
@@ -195,7 +199,7 @@ autoTable(doc, {
 > **保證吃到目前程式碼**的 PDF 自行比對，如果一致，再請使用者整頁強制重整
 > （Ctrl+Shift+R）後重測，而不是直接改程式碼「碰運氣」。
 
-## 驗證流程：Playwright 攔截下載 + Read 工具直接看 PDF
+## 驗收目標與擷取範例
 
 不依賴使用者截圖，自己產生並檢視實際渲染結果：
 
@@ -212,11 +216,11 @@ autoTable(doc, {
 
 **⚠️ 這個技巧只解決「AI 自己怎麼驗證」，不等於使用者看得到畫面。** Claude Code 是 CLI，
 `Read` 一份 PDF 只會把畫面餵給模型自己看，終端機不會把圖片顯示給使用者。使用者若明確要求
-「讓我看截圖」，正確做法是：
+「讓我看截圖」，可依宿主能力使用：
 - 直接告訴使用者本機上產出的 PDF 檔案路徑，讓對方自己開；或
 - 用 `Artifact` 工具把截圖包成網頁連結。
 
-**已知死路，不要重試**：想用 Playwright/Chromium 把 PDF 轉成 PNG 給使用者看
+**特定宿主的限制參考**：想用 Playwright/Chromium 把 PDF 轉成 PNG 給使用者看
 （`page.goto(blobUrl 或 file://xxx.pdf)` 再 `page.screenshot()`）——Playwright 內建的 Chromium
 會把導覽到 PDF 一律當「下載」處理，不會走內建 PDF viewer 渲染，`page.goto` 會直接丟
 `Download is starting` 錯誤而不是完成導覽。且此類 Windows 開發機通常也沒有
@@ -251,7 +255,7 @@ it('should left-align when cell text wraps to multiple lines', () => {
 });
 ```
 
-## Checklist（改動 PDF worker 版面前後）
+## 版面驗收參考
 
 - [ ] 表頭多行文字：`.split('\n')` 逐行畫 + `row` 累加，沒有跳過任何一行
 - [ ] `tableStartY`（或下一段內容 Y 座標）用累加後的 `row` 算，不是寫死的常數

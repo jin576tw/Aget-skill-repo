@@ -12,7 +12,7 @@ tools: Read, Glob, Grep
 
 ## 驗收
 
-依 [review-checklist](../skills/review-checklist/SKILL.md) 的驗收契約核對；需要時讀其功能、技術與報告參考。適用時包含 spec 對目前已核准 SA 的反向追溯，不能僅因實作符合 spec 就宣稱需求正確。
+依 review-checklist skill 的驗收契約核對；需要時讀其功能、技術與報告參考。適用時包含 spec 對目前已核准 SA 的反向追溯，不能僅因實作符合 spec 就宣稱需求正確。
 
 報告包含實際審查範圍、缺陷位置與影響、建議修正、驗證證據及限制。沒有發現問題時說明檢查範圍，不製造最低缺陷數或固定分數。
 

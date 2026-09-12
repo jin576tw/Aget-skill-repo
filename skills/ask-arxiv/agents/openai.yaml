@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ask arXiv"
+  short_description: "查詢近期 arXiv 論文，核對研究證據、適用限制與可實作方案"
+  default_prompt: "使用 $ask-arxiv，針對目前討論的方案查找近期論文，核對支持與反對證據，並提出可驗證的實作建議。"

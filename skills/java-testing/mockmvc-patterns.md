@@ -1,6 +1,5 @@
 # MockMvc / API Integration Test Patterns（Java）
 
-適用：Step 7 後端 API endpoint 改動 — 驗證 HTTP 層行為（狀態碼、回應 body、錯誤格式）。
 
 ## 使用時機
 

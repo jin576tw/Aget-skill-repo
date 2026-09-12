@@ -1,334 +1,260 @@
-# 全工具過度設計審查
+# 全工具責任與去留
 
-核對日：2026-09-12；來源 HEAD d61b66f。這是逐項設計處置清單；其中上游更新的 review／debug 與相容呼叫端已完成局部改寫，見 [main 整合紀錄](main-integration.md)。其他項目仍是待實作處置，不是全量功能回歸。所有公開入口均列出；附屬檔與程式做全量結構清冊、重複內容及呼叫依賴檢查，未宣稱每個第三方演算法已完成安全或功能審計。
+本版 30 skills、5 Agents，commands 為零。舊版 33／10／10。第三方 API／格式範例按需保留；技術依賴順序、來源與鎖不是多餘流程。這是能力與結構核對，不是每個第三方演算法的安全審计。
 
-判斷：限制方法且不增證據、重複入口、無條件外部副作用屬優先修正。必要資料鎖、來源保護、真實驗證及文件格式能力不視為過度設計。
+## 現存 skills
 
-## Skills（33）
-
-| 工具 | 建議 | 責任與理由 |
-|---|---|---|
-| [angular-conventions](../skills/angular-conventions/SKILL.md) | 保留、縮限 | 框架慣例有獨立價值；不強制既有專案改 standalone |
-| [angular-testing](../skills/angular-testing/SKILL.md) | 保留、改契約 | 移除 Step 3／指定 writer，保留行為測試與 AC 證據 |
-| [bsd-report](../skills/bsd-report/SKILL.md) | 保留格式、換實作 | 報表格式有價值；移除 PowerShell 打包及固定八步，採 Node |
-| [compact-signal](../skills/compact-signal/SKILL.md) | 合併成 reference | 一行 PASS 會隱藏缺口；保留精簡結果、證據路徑及限制，不另立公開入口 |
-| [docx](../skills/docx/SKILL.md) | 保留專業能力 | OOXML、修訂與驗證不是多餘；程序範例按需載入，避免全面強制 workflow |
-| [error-first-debug](../skills/error-first-debug/SKILL.md) | 優先改寫 | 不得讀碼前必取齊證據過度限制；保留根因證據、timeout 截尾區分與替代路徑查證 |
-| [find-skills](../skills/find-skills/SKILL.md) | 保留、縮限 | 能力缺口才搜尋；不因一般如何做問題就搜尋安裝，不以人氣硬門檻選工具 |
-| [frontend-design](../skills/frontend-design/SKILL.md) | 保留、縮限 | 設計能力獨立；取消固定美學偏好，遵循既有設計系統 |
-| [gate-keeper](../skills/gate-keeper/SKILL.md) | 合併成 reference | DoR／DoD 有價值，固定 Step 0／8 和例行確認無必要；併入目標驗收 |
-| [goal-preflight](../skills/goal-preflight/SKILL.md) | 合併核心契約 | 保留停止條件與目標證據，移除固定八元素與 maker/checker 全面強制 |
-| [java-explain](../skills/java-explain/SKILL.md) | 保留、去專案耦合 | 讀者程度與實際代碼決定解說，不把單一業務領域當全域預設 |
-| [java-testing](../skills/java-testing/SKILL.md) | 保留、改契約 | 測試技術獨立；移除 Step 3／7 和固定角色 |
-| [jira-fix-comment](../skills/jira-fix-comment/SKILL.md) | 保留、縮限 | 外部留言須明確授權；格式可按專案，不要求每個修正都留言 |
-| [jira-get-attachments](../skills/jira-get-attachments/SKILL.md) | 保留能力 | HTTP／媒體驗證有用；移除固定環境及所有附件必讀，只取任務相關附件 |
-| [jspdf-autotable-worker](../skills/jspdf-autotable-worker/SKILL.md) | 保留專業能力 | 排版、字型、worker 具獨立技術價值；技術依賴順序不能誤刪為 SOP |
-| [llm-wiki-maintainer](../skills/llm-wiki-maintainer/SKILL.md) | 保留、界定責任 | 負責穩定知識與來源；接續 checkpoint 不觸發全庫重整，蒸餾不另建 agent |
-| [loop-preflight](../skills/loop-preflight/SKILL.md) | 保留適配知識、縮入口 | 時間觸發與 goal 不同；宿主語法按需參考，不再配重複 command |
-| [md-to-pdf](../skills/md-to-pdf/SKILL.md) | 保留轉換能力 | 與一般 PDF 操作不同；取消默認全域 npm 安裝，依既有 Node 環境 |
-| [pdf](../skills/pdf/SKILL.md) | 保留專業能力 | 表單／OCR／圖像定位是功能；API 範例及 helper 不因行數多而刪除 |
-| [playwright-patterns](../skills/playwright-patterns/SKILL.md) | 保留 reference 能力 | 保留穩定 selector、mock 範圍與實際斷言；不固定登入／埠／harness |
-| [ppt](../skills/ppt/SKILL.md) | 保留專業能力 | 投影片與文書 PDF 不同；取消每次固定八步與全域安裝 |
-| [preflight](../skills/preflight/SKILL.md) | 合併至 start-work 參考 | 與 plan-formatter 重複；只補會影響目標的未知，不每次查全庫 |
-| [review-checklist](../skills/review-checklist/SKILL.md) | 保留、優先改寫 | 保留反向追溯與可定位缺陷；取消最低缺陷數、全域分數門檻 |
-| [spec-conventions](../skills/spec-conventions/SKILL.md) | 保留、改契約 | 可驗證需求與一致性有用；UI／API 欄位依任務，不固定所有章節 |
-| [start-plan](../skills/start-plan/SKILL.md) | 保留、優先改寫 | 共享目標與依賴有用；去固定派工、例行確認、每次 commit/push；修復不存在的 mjs 引用 |
-| [tdd](../skills/tdd/SKILL.md) | 保留、縮限 | 明確採 TDD 時保留 test-first 時序；不強制所有工作採單一 AC 回合 |
-| [ticket-workflow](../skills/ticket-workflow/SKILL.md) | 拆出專案交付參考 | 與 start-work 重複；票務需求不自動授權 commit、MR、留言及交 QA |
-| [verify](../skills/verify/SKILL.md) | 保留、優先改寫 | 實際行為證據必要；取消固定 Angular／4200／全 API mock，截图不自動等於 PASS |
-| [vue-conventions](../skills/vue-conventions/SKILL.md) | 保留、縮限 | 保留 DOM／CSS 查證，取消固定診斷順序與版本假設 |
-| [vue-testing](../skills/vue-testing/SKILL.md) | 保留、改契約 | 框架測試專業有用；取消固定回合與角色 |
-| [web-design-guidelines](../skills/web-design-guidelines/SKILL.md) | 保留、縮限 | 可用性審查獨立；外部文件是審查資料，不得覆寫任務規範 |
-| [windows-shell-gotchas](../skills/windows-shell-gotchas/SKILL.md) | 退役公開入口 | Node 統一後保留路徑、BOM、鎖等通用教訓到參考檔，移除 PowerShell 路線 |
-| [xlsx](../skills/xlsx/SKILL.md) | 保留專業能力 | 公式重算、格式、驗證有用；不將全部格式偏好套到非財務文件 |
-
-## Agents（10）
-
-| 工具 | 建議 | 責任與理由 |
-|---|---|---|
-| [backend-unit-test-writer](../agents/backend-unit-test-writer.md) | 可選、與前端 writer 合併候選 | 測試能力由技術 skill 提供；無執行權限不可回報實跑 PASS |
-| [code-reader](../agents/code-reader.md) | 保留可選 | 唯讀探索有隔離價值；不強制每任務先派 |
-| [code-reviewer](../agents/code-reviewer.md) | 保留可選、改驗收 | 獨立審查有價值；取消至少三缺陷、固定分數及無依據 PASS |
-| [frontend-unit-test-writer](../agents/frontend-unit-test-writer.md) | 可選、與後端 writer 合併候選 | 取消按技術棧固定派工；保留隔離 context 的測試設計价值 |
-| [honey](../agents/honey.md) | 保留可選、縮責任 | 取消強制所有記憶都派工；模型蒸餾與 Node 安全寫入分工，去自動 commit/push |
-| [implementer](../agents/implementer.md) | 取消必備角色 | 與主模型實作重複；單一 AC、先綠燈才停及固定交棒改為目標與證據 |
-| [plan-formatter](../agents/plan-formatter.md) | 合併／退役 | 與 preflight、start-plan 重複；不要求固定表格及每個 OQ 全案停止 |
-| [spec-reviewer](../agents/spec-reviewer.md) | 保留可選、縮限 | 保留需求／程式查證，去預設百分制及全域固定章節 |
-| [spec-writer](../agents/spec-writer.md) | 取消專屬壟斷 | 規格由有能力的工作者更新；保留專業可選角色，去所有 spec 只能本 agent 修改 |
-| [test-writer](../agents/test-writer.md) | 保留可選、改契約 | 瀏覽器工具隔離有價值；移除固定 harness、限制必要讀檔及強制步驟 |
-
-## Commands（10）
-
-| 工具 | 建議 | 責任與理由 |
-|---|---|---|
-| [handover](../commands/handover.md) | 轉 skill／既有記憶入口 | 不固定呼叫 honey；checkpoint 單檔、finalize 知識與 status 成功才刪 |
-| [print-sd](../commands/print-sd.md) | 合併 spec-conventions | 保留可施工規格目標，取消評分重試與 PDF 推銷回合 |
-| [print-work-status](../commands/print-work-status.md) | 合併記憶查詢能力 | 保留時間範圍與來源，取消寫死專案家族 |
-| [review-change](../commands/review-change.md) | 合併 review-checklist | 純審查不自動更新 spec |
-| [save](../commands/save.md) | 合併記憶維護入口 | 保留主動保存／蒸餾，不再固定 honey 和全庫收尾 |
-| [start-goal](../commands/start-goal.md) | 退役重複 wrapper | 目標契約保留在核心，宿主 goal 語法按需 |
-| [start-loop](../commands/start-loop.md) | 退役重複 wrapper | 保留週期監控能力到相應 skill，不重複預檢 |
-| [start-plan](../commands/start-plan.md) | 退役重複 wrapper | 以同名 skill 為正本，取消 model override |
-| [start-work](../commands/start-work.md) | 轉核心 skill | 用目標、驗收、邊界取代 332 行固定 choreography |
-| [todo](../commands/todo.md) | 合併記憶查詢能力 | 待辦與週報共用資料讀取；優先度依實際期限與阻塞 |
-
-## Hooks 與設定
-
-| 項目 | 判斷 |
+| 工具 | 保留責任 |
 |---|---|
-| pitfall-guard.mjs | 保留選用提醒；按命中情境注入，不能宣稱硬性安全攔截 |
-| session-start-context.mjs | 保留選用輕量導航；與規範重複注入的部分削減 |
-| 兩支同名 .ps1 hooks | Node 相容驗收及 caller 遷移後刪除，不保留雙實作 |
-| plan-board.ps1 | 需要共享任務才用；Node 移植保留 hash／claim／一致性，移除自動 Git 與固定角色 |
-| CLAUDE.md／settings.json | 個人機器設定不當成可直接發布 plugin 預設；規範只留目標、驗收及邊界 |
-| 新紀錄 hook | 多種事件共用 Node 核心；不新增事件專屬 agent／daemon／完整事件 DB |
-| ask-arxiv（尚在 staging） | 有明確研究缺口，保留一個 skill；不新增研究 command 或 agent |
-| setup-work（待實作） | 保留 setup/update/check，一個入口；延後私有 runtime／多層設定平台 |
+| [angular-conventions](../skills/angular-conventions/SKILL.md) | Angular Standalone Components 通用開發慣例。TRIGGER when 使用者進行 Angular 開發、建立新元件、討論元件架構。提供元件結構、生命週期、依賴注入等通用模式。 |
+| [angular-testing](../skills/angular-testing/SKILL.md) | 撰寫及驗證 Angular（沿用專案 Jasmine／TestBed 或其他既有 runner） 的單元／元件或 API 測試，按需求建立行為證據。 |
+| [ask-arxiv](../skills/ask-arxiv/SKILL.md) | 查詢近期 arXiv 原始論文，為設計或技術選擇尋找研究支持、反證與可實作方法，或核對論文及他人引用的研究說法。適用於 /ask-arxiv、$ask-arxiv、「找論文支持」「核對研究數字」「有沒有近期實驗證據」等需求；一般除錯、API 用法或純概念解說不自動啟動文獻研究。 |
+| [bsd-report](../skills/bsd-report/SKILL.md) | 依指定格式與截圖產生 BSD 測報 Word 文件，適用需要該報告樣式的交付。 |
+| [docx](../skills/docx/SKILL.md) | "Use this skill whenever the user wants to create, read, edit, or manipulate Word documents (.docx files). Triggers include: any mention of 'Word doc', 'word document', '.docx', or requests to produce professional documents with formatting like tables of contents, headings, page numbers, or letterheads. Also use when extracting or reorganizing content from .docx files, inserting or replacing images in documents, performing find-and-replace in Word files, working with tracked changes or comments, or converting content into a polished Word document. If the user asks for a 'report', 'memo', 'letter', 'template', or similar deliverable as a Word or .docx file, use this skill. Do NOT use for PDFs, spreadsheets, Google Docs, or general coding tasks unrelated to document generation." |
+| [error-first-debug](../skills/error-first-debug/SKILL.md) | 診斷 bug、例外、錯誤資料或效能異常，以實際證據辨識根因與修正效果。純新功能開發或規格撰寫不需載入。 |
+| [find-skills](../skills/find-skills/SKILL.md) | 當目前任務確實缺乏所需專業能力時，查找可用 skill 或 plugin 並核對其適用性。 |
+| [frontend-design](../skills/frontend-design/SKILL.md) | Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics. |
+| [handover](../skills/handover/SKILL.md) | 保存或讀取跨 Agent 的任務接續，處理明確暫停、里程碑及完成後的知識蒸餾與結案；一般問答不建立 handover。 |
+| [java-explain](../skills/java-explain/SKILL.md) | 依讀者程度解說指定 Java 程式碼、語言機制與實際行為。 |
+| [java-testing](../skills/java-testing/SKILL.md) | 撰寫及驗證 Java（沿用 JUnit／Mockito／AssertJ／MockMvc 等專案設定） 的單元／元件或 API 測試，按需求建立行為證據。 |
+| [jira-fix-comment](../skills/jira-fix-comment/SKILL.md) | 依已驗證的修正整理 Jira 留言草稿；使用者已明確授權張貼時發布並核對結果。 |
+| [jira-get-attachments](../skills/jira-get-attachments/SKILL.md) | 讀取任務相關的 Jira 附件、截圖與文件，核對實際功能入口及問題證據。 |
+| [jspdf-autotable-worker](../skills/jspdf-autotable-worker/SKILL.md) | jsPDF + jspdf-autotable 報表 PDF 產生慣例（多在 Angular Web Worker 內執行）。TRIGGER when 使用者要調整 *-pdf-worker.ts、autoTable 欄寬/換行/對齊、PDF 報表版面跑版、表頭多行文字、或回報「PDF 欄位置中/靠左」「欄寬不自然」「換行怪異」「PDF 截圖看不到線」等症狀。 |
+| [llm-wiki-maintainer](../skills/llm-wiki-maintainer/SKILL.md) | 維護知識庫的穩定知識、來源及導航；用於蒸餾、整理或查詢知識，不在每次 checkpoint 重整全庫。 |
+| [md-to-pdf](../skills/md-to-pdf/SKILL.md) | 將一般 Markdown 文件轉成含中文、圖片及必要 Mermaid 圖表的 PDF。 |
+| [pdf](../skills/pdf/SKILL.md) | Use this skill whenever the user wants to do anything with PDF files. This includes reading or extracting text/tables from PDFs, combining or merging multiple PDFs into one, splitting PDFs apart, rotating pages, adding watermarks, creating new PDFs, filling PDF forms, encrypting/decrypting PDFs, extracting images, and OCR on scanned PDFs to make them searchable. If the user mentions a .pdf file or asks to produce one, use this skill. |
+| [playwright-patterns](../skills/playwright-patterns/SKILL.md) | Playwright E2E 測試撰寫通用指南。TRIGGER when 使用者提及 Playwright、E2E 測試、UI 測試、自動化測試、撰寫測試。提供選擇器策略、認證繞過、API mock、測試報告格式。 |
+| [ppt](../skills/ppt/SKILL.md) | 從內容建立 MARP 投影片並匯出 PDF 或 PPTX；版面依讀者與使用者格式需求。 |
+| [review-checklist](../skills/review-checklist/SKILL.md) | 審查程式碼變更、規格追溯與驗收證據。用於 code review 或交付驗收；純規格撰寫或一般測試不需載入。 |
+| [setup-work](../skills/setup-work/SKILL.md) | 首次準備、更新或修復 Aget 工具、CLAUDE.md／AGENTS.md 與選用 hooks；不是日常開發啟動步驟。 |
+| [spec-conventions](../skills/spec-conventions/SKILL.md) | 撰寫或維護可驗證、可追溯的需求／規格，與已核准來源及實作保持一致。 |
+| [start-plan](../skills/start-plan/SKILL.md) | 為跨 session、共享依賴或多項交付建立可接續計畫，或接續已有 plan-board；集中的小任務不需建立。 |
+| [start-work](../skills/start-work/SKILL.md) | 完成開發需求、修正與接續既有實作；依需求判斷規劃、技術能力及驗收，不用於純問答或純文件研究。 |
+| [tdd](../skills/tdd/SKILL.md) | 在使用者要求 test-first／TDD，或適用專案採用 TDD 時，以行為測試驅動開發。 |
+| [verify](../skills/verify/SKILL.md) | 執行並觀察變更後的實際行為，核對修正、功能或交付是否符合需求。 |
+| [vue-conventions](../skills/vue-conventions/SKILL.md) | Vue 2 / Nuxt 2 / BootstrapVue 開發慣例與視覺 bug 除錯模式（既有 Vue 專案）。TRIGGER when 使用者在 Vue 2 / Nuxt / BootstrapVue 專案開發頁面、修視覺 bug（欄位凍結、遮蓋、破版、定位）、或需要定位 Vue 頁面入口。DO NOT TRIGGER when 純測試撰寫（用 vue-testing）。 |
+| [vue-testing](../skills/vue-testing/SKILL.md) | 撰寫及驗證 Vue（依實際 Vue 版本選相容的測試工具） 的單元／元件或 API 測試，按需求建立行為證據。 |
+| [web-design-guidelines](../skills/web-design-guidelines/SKILL.md) | Review UI code for Web Interface Guidelines compliance. Use when asked to "review my UI", "check accessibility", "audit design", "review UX", or "check my site against best practices". |
+| [xlsx](../skills/xlsx/SKILL.md) | "Use this skill any time a spreadsheet file is the primary input or output. This means any task where the user wants to: open, read, edit, or fix an existing .xlsx, .xlsm, .csv, or .tsv file (e.g., adding columns, computing formulas, formatting, charting, cleaning messy data); create a new spreadsheet from scratch or from other data sources; or convert between tabular file formats. Trigger especially when the user references a spreadsheet file by name or path — even casually (like \"the xlsx in my downloads\") — and wants something done to it or produced from it. Also trigger for cleaning or restructuring messy tabular data files (malformed rows, misplaced headers, junk data) into proper spreadsheets. The deliverable must be a spreadsheet file. Do NOT trigger when the primary deliverable is a Word document, HTML report, standalone Python script, database pipeline, or Google Sheets API integration, even if tabular data is involved." |
 
-## Companion 與程式全量清冊
+## 合併的 skill 入口
 
-下表包含 skills 下除 SKILL.md 外的所有檔案，以及 hooks 全部檔案。reference 需按責任改写；技術範例的操作依賴不直接刪除。Python 文件 helper 不等於 PowerShell 雙路線：先保留功能，若要全語言 Node 化另需相容性證據。
-
-| 路徑 | 處理類型 |
+| 舊工具 | 責任落點 |
 |---|---|
-| `hooks/pitfall-guard.mjs` | 保留執行能力；內部 helper 不另發布入口 |
-| `hooks/pitfall-guard.ps1` | Node 相容遷移後移除 |
-| `hooks/session-start-context.mjs` | 保留執行能力；內部 helper 不另發布入口 |
-| `hooks/session-start-context.ps1` | Node 相容遷移後移除 |
-| `skills/angular-conventions/component-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/angular-conventions/form-value-gotchas.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/angular-testing/ac-tagging.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/angular-testing/component-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/angular-testing/unit-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/bsd-report/docx-structure.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/bsd-report/examples.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/LICENSE.txt` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/__init__.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/accept_changes.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/comment.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/helpers/__init__.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/helpers/merge_runs.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/helpers/simplify_redlines.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/pack.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chart.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-main.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-picture.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/pml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-math.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/sml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-main.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/wml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/xml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-contentTypes.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-coreProperties.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-digSig.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-relationships.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/mce/mc.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/microsoft/wml-2010.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/microsoft/wml-2012.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/microsoft/wml-2018.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/microsoft/wml-cex-2018.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/microsoft/wml-cid-2016.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/microsoft/wml-sdtdatahash-2020.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/schemas/microsoft/wml-symex-2015.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/office/soffice.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/unpack.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/validate.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/validators/__init__.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/validators/base.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/validators/docx.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/validators/pptx.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/office/validators/redlining.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/docx/scripts/templates/comments.xml` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/templates/commentsExtended.xml` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/templates/commentsExtensible.xml` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/templates/commentsIds.xml` | 保留技術資源／格式／授權；按需載入 |
-| `skills/docx/scripts/templates/people.xml` | 保留技術資源／格式／授權；按需載入 |
-| `skills/error-first-debug/root-cause-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/frontend-design/LICENSE.txt` | 保留技術資源／格式／授權；按需載入 |
-| `skills/gate-keeper/dod-checklist.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/gate-keeper/dor-checklist.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/gate-keeper/human-checkpoints.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/gate-keeper/open-questions.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/goal-preflight/goal-contract.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/java-explain/explain-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/java-testing/ac-tagging.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/java-testing/mockmvc-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/java-testing/unit-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/jspdf-autotable-worker/verification-harness.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/pdf/LICENSE.txt` | 保留技術資源／格式／授權；按需載入 |
-| `skills/pdf/forms.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/pdf/reference.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/pdf/scripts/check_bounding_boxes.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/pdf/scripts/check_fillable_fields.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/pdf/scripts/convert_pdf_to_images.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/pdf/scripts/create_validation_image.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/pdf/scripts/extract_form_field_info.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/pdf/scripts/extract_form_structure.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/pdf/scripts/fill_fillable_fields.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/pdf/scripts/fill_pdf_form_with_annotations.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/playwright-patterns/auth-mock.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/playwright-patterns/layout-assertions.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/playwright-patterns/report-template.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/playwright-patterns/selectors.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/playwright-patterns/worker-mock.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/preflight/workflow.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/review-checklist/functional.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/review-checklist/report-template.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/review-checklist/technical.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/spec-conventions/ears-syntax.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/spec-conventions/templates.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/start-plan/agents/openai.yaml` | 保留技術資源／格式／授權；按需載入 |
-| `skills/start-plan/references/plan-board-template.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/start-plan/scripts/plan-board.ps1` | Node 相容遷移後移除 |
-| `skills/tdd/deep-modules.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/tdd/interface-design.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/tdd/mocking.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/tdd/refactoring.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/tdd/tests.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/ticket-workflow/delivery-checklist.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/ticket-workflow/git-conventions.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/ticket-workflow/jira-ops.md` | 優先核對固定流程；改目標／驗收，保留技術契約 |
-| `skills/vue-conventions/bootstrapvue-gotchas.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/vue-conventions/page-entry-lookup.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/vue-testing/ac-tagging.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/vue-testing/component-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/vue-testing/unit-patterns.md` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/LICENSE.txt` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/helpers/__init__.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/helpers/merge_runs.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/helpers/simplify_redlines.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/pack.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chart.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-main.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-picture.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/pml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-math.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/sml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-main.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/wml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/xml.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-contentTypes.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-coreProperties.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-digSig.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-relationships.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/mce/mc.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/microsoft/wml-2010.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/microsoft/wml-2012.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/microsoft/wml-2018.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/microsoft/wml-cex-2018.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/microsoft/wml-cid-2016.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/microsoft/wml-sdtdatahash-2020.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/schemas/microsoft/wml-symex-2015.xsd` | 保留技術資源／格式／授權；按需載入 |
-| `skills/xlsx/scripts/office/soffice.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/unpack.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/validate.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/validators/__init__.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/validators/base.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/validators/docx.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/validators/pptx.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/office/validators/redlining.py` | 保留執行能力；內部 helper 不另發布入口 |
-| `skills/xlsx/scripts/recalc.py` | 保留執行能力；內部 helper 不另發布入口 |
+| compact-signal | start-work：精簡結果＋可核對證據 |
+| gate-keeper | start-work：目標與驗收，移除例行確認 |
+| goal-preflight | start-work：持續目標與停止條件 |
+| loop-preflight | start-work references/delivery：宿主排程邊界 |
+| preflight | start-work references/task-routing：只補關鍵未知 |
+| ticket-workflow | start-work references/delivery：交付範圍；Jira 專業 skills |
+| windows-shell-gotchas | Node fs／路徑／鎖測試與 runtime：移除 PowerShell 入口 |
 
-### 相同內容的資源
+## Agents
 
-下列為 SHA-256 完全相同的檔案組；共享 office helper 可考慮一份內部實作，但獨立 skill 分發可能需要自足副本。沒有打包／import 回歸前，不為減少檔案數直接搬移。
+- [code-reader](../agents/code-reader.md)：按任務及宿主授權選用，不固定模型或每次必派。
+- [code-reviewer](../agents/code-reviewer.md)：按任務及宿主授權選用，不固定模型或每次必派。
+- [honey](../agents/honey.md)：按任務及宿主授權選用，不固定模型或每次必派。
+- [spec-reviewer](../agents/spec-reviewer.md)：按任務及宿主授權選用，不固定模型或每次必派。
+- [test-writer](../agents/test-writer.md)：按任務及宿主授權選用，不固定模型或每次必派。
 
-- `skills/docx/LICENSE.txt`、`skills/pdf/LICENSE.txt`、`skills/xlsx/LICENSE.txt`
-- `skills/docx/scripts/office/helpers/__init__.py`、`skills/xlsx/scripts/office/helpers/__init__.py`
-- `skills/docx/scripts/office/helpers/merge_runs.py`、`skills/xlsx/scripts/office/helpers/merge_runs.py`
-- `skills/docx/scripts/office/helpers/simplify_redlines.py`、`skills/xlsx/scripts/office/helpers/simplify_redlines.py`
-- `skills/docx/scripts/office/pack.py`、`skills/xlsx/scripts/office/pack.py`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chart.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chart.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-main.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-main.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-picture.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-picture.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/pml.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/pml.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-math.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-math.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/sml.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/sml.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-main.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-main.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/wml.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/wml.xsd`
-- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/xml.xsd`、`skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/xml.xsd`
-- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-contentTypes.xsd`、`skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-contentTypes.xsd`
-- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-coreProperties.xsd`、`skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-coreProperties.xsd`
-- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-digSig.xsd`、`skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-digSig.xsd`
-- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-relationships.xsd`、`skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-relationships.xsd`
-- `skills/docx/scripts/office/schemas/mce/mc.xsd`、`skills/xlsx/scripts/office/schemas/mce/mc.xsd`
-- `skills/docx/scripts/office/schemas/microsoft/wml-2010.xsd`、`skills/xlsx/scripts/office/schemas/microsoft/wml-2010.xsd`
-- `skills/docx/scripts/office/schemas/microsoft/wml-2012.xsd`、`skills/xlsx/scripts/office/schemas/microsoft/wml-2012.xsd`
-- `skills/docx/scripts/office/schemas/microsoft/wml-2018.xsd`、`skills/xlsx/scripts/office/schemas/microsoft/wml-2018.xsd`
-- `skills/docx/scripts/office/schemas/microsoft/wml-cex-2018.xsd`、`skills/xlsx/scripts/office/schemas/microsoft/wml-cex-2018.xsd`
-- `skills/docx/scripts/office/schemas/microsoft/wml-cid-2016.xsd`、`skills/xlsx/scripts/office/schemas/microsoft/wml-cid-2016.xsd`
-- `skills/docx/scripts/office/schemas/microsoft/wml-sdtdatahash-2020.xsd`、`skills/xlsx/scripts/office/schemas/microsoft/wml-sdtdatahash-2020.xsd`
-- `skills/docx/scripts/office/schemas/microsoft/wml-symex-2015.xsd`、`skills/xlsx/scripts/office/schemas/microsoft/wml-symex-2015.xsd`
-- `skills/docx/scripts/office/soffice.py`、`skills/xlsx/scripts/office/soffice.py`
-- `skills/docx/scripts/office/unpack.py`、`skills/xlsx/scripts/office/unpack.py`
-- `skills/docx/scripts/office/validate.py`、`skills/xlsx/scripts/office/validate.py`
-- `skills/docx/scripts/office/validators/__init__.py`、`skills/xlsx/scripts/office/validators/__init__.py`
-- `skills/docx/scripts/office/validators/base.py`、`skills/xlsx/scripts/office/validators/base.py`
-- `skills/docx/scripts/office/validators/docx.py`、`skills/xlsx/scripts/office/validators/docx.py`
-- `skills/docx/scripts/office/validators/pptx.py`、`skills/xlsx/scripts/office/validators/pptx.py`
-- `skills/docx/scripts/office/validators/redlining.py`、`skills/xlsx/scripts/office/validators/redlining.py`
+backend／frontend-unit-test-writer 合併 test-writer；技術知識分別留測試 skills。implementer 由主會話／宿主通用 Agent 實作；spec-writer 的方法留 spec-conventions；plan-formatter 的判斷留 start-work。獨立 reviewer 的唯讀工具邊界保留。
 
-## 優先修正證據
+## 移除 commands 的責任
 
-- start-plan/SKILL.md 引用 scripts/plan-board.mjs，但 repo 僅有 .ps1；這是缺失依賴，不能用文件更名冒充移植。
-- implementer 無 Bash 執行能力，卻用「綠燈 PASS」作固定輸出；應分清已改碼與實際測試證據。
-- plan-formatter 固定 Step 0；preflight、gate-keeper、start-work 重複 intake 與確認。
-- gate-keeper/human-checkpoints.md 要求全部 AC 完成後再確認是否進入 DoD；已有任務授權下此為多餘關卡。
-- hone​​y／handover 的单檔模式不能直接承擔結案蒸餾；需正式分開 checkpoint 與 finalize 責任並同步 vault 契約。
+| 舊 command | 落點 |
+|---|---|
+| start-work、start-plan | 同名 skills |
+| handover | handover checkpoint／finalize |
+| save、todo、print-work-status | llm-wiki-maintainer 查詢／維護＋handover 結案 |
+| print-sd | spec-conventions＋文件 skills |
+| review-change | review-checklist |
+| start-goal、start-loop | start-work 的宿主持續工作／排程契約 |
 
-驗收：移除入口前完成 caller 與責任映射；保留適用 SA 反向追溯、timeout 證據、真實 UI 驗證與知識来源。逐項設計審查不能取代宿主觸發、腳本回歸及接續測試。
+## Node 与附屬檔清冊
+
+plan-board、2 個既有 hooks 的 PowerShell 已移除；BSD 打包由 Node pack-docx 提供。每個附屬檔列於下方，格式、API 範例及授權留在原 skill，沒有為減少檔案數破壞自足分發。
+
+- `scripts/check-package.mjs`
+- `scripts/enable-vault.mjs`
+- `scripts/lib/board.mjs`
+- `scripts/lib/files.mjs`
+- `scripts/lib/memory.mjs`
+- `scripts/lib/setup.mjs`
+- `scripts/memory.mjs`
+- `scripts/migrate-handover.mjs`
+- `scripts/pack-docx.mjs`
+- `scripts/setup-work.mjs`
+- `scripts/stage-checkpoint.mjs`
+- `hooks/pitfall-guard.mjs`
+- `hooks/record.mjs`
+- `hooks/session-start-context.mjs`
+- `skills/angular-conventions/component-patterns.md`
+- `skills/angular-conventions/form-value-gotchas.md`
+- `skills/angular-testing/ac-tagging.md`
+- `skills/angular-testing/component-patterns.md`
+- `skills/angular-testing/unit-patterns.md`
+- `skills/ask-arxiv/agents/openai.yaml`
+- `skills/bsd-report/docx-structure.md`
+- `skills/bsd-report/examples.md`
+- `skills/docx/LICENSE.txt`
+- `skills/docx/scripts/__init__.py`
+- `skills/docx/scripts/accept_changes.py`
+- `skills/docx/scripts/comment.py`
+- `skills/docx/scripts/office/helpers/__init__.py`
+- `skills/docx/scripts/office/helpers/merge_runs.py`
+- `skills/docx/scripts/office/helpers/simplify_redlines.py`
+- `skills/docx/scripts/office/pack.py`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chart.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-main.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-picture.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/pml.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-math.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/sml.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-main.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/wml.xsd`
+- `skills/docx/scripts/office/schemas/ISO-IEC29500-4_2016/xml.xsd`
+- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-contentTypes.xsd`
+- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-coreProperties.xsd`
+- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-digSig.xsd`
+- `skills/docx/scripts/office/schemas/ecma/fouth-edition/opc-relationships.xsd`
+- `skills/docx/scripts/office/schemas/mce/mc.xsd`
+- `skills/docx/scripts/office/schemas/microsoft/wml-2010.xsd`
+- `skills/docx/scripts/office/schemas/microsoft/wml-2012.xsd`
+- `skills/docx/scripts/office/schemas/microsoft/wml-2018.xsd`
+- `skills/docx/scripts/office/schemas/microsoft/wml-cex-2018.xsd`
+- `skills/docx/scripts/office/schemas/microsoft/wml-cid-2016.xsd`
+- `skills/docx/scripts/office/schemas/microsoft/wml-sdtdatahash-2020.xsd`
+- `skills/docx/scripts/office/schemas/microsoft/wml-symex-2015.xsd`
+- `skills/docx/scripts/office/soffice.py`
+- `skills/docx/scripts/office/unpack.py`
+- `skills/docx/scripts/office/validate.py`
+- `skills/docx/scripts/office/validators/__init__.py`
+- `skills/docx/scripts/office/validators/base.py`
+- `skills/docx/scripts/office/validators/docx.py`
+- `skills/docx/scripts/office/validators/pptx.py`
+- `skills/docx/scripts/office/validators/redlining.py`
+- `skills/docx/scripts/templates/comments.xml`
+- `skills/docx/scripts/templates/commentsExtended.xml`
+- `skills/docx/scripts/templates/commentsExtensible.xml`
+- `skills/docx/scripts/templates/commentsIds.xml`
+- `skills/docx/scripts/templates/people.xml`
+- `skills/error-first-debug/root-cause-patterns.md`
+- `skills/frontend-design/LICENSE.txt`
+- `skills/java-explain/explain-patterns.md`
+- `skills/java-testing/ac-tagging.md`
+- `skills/java-testing/mockmvc-patterns.md`
+- `skills/java-testing/unit-patterns.md`
+- `skills/jspdf-autotable-worker/verification-harness.md`
+- `skills/pdf/LICENSE.txt`
+- `skills/pdf/forms.md`
+- `skills/pdf/reference.md`
+- `skills/pdf/scripts/check_bounding_boxes.py`
+- `skills/pdf/scripts/check_fillable_fields.py`
+- `skills/pdf/scripts/convert_pdf_to_images.py`
+- `skills/pdf/scripts/create_validation_image.py`
+- `skills/pdf/scripts/extract_form_field_info.py`
+- `skills/pdf/scripts/extract_form_structure.py`
+- `skills/pdf/scripts/fill_fillable_fields.py`
+- `skills/pdf/scripts/fill_pdf_form_with_annotations.py`
+- `skills/playwright-patterns/auth-mock.md`
+- `skills/playwright-patterns/layout-assertions.md`
+- `skills/playwright-patterns/report-template.md`
+- `skills/playwright-patterns/selectors.md`
+- `skills/playwright-patterns/worker-mock.md`
+- `skills/review-checklist/functional.md`
+- `skills/review-checklist/report-template.md`
+- `skills/review-checklist/technical.md`
+- `skills/spec-conventions/ears-syntax.md`
+- `skills/spec-conventions/templates.md`
+- `skills/start-plan/agents/openai.yaml`
+- `skills/start-plan/references/plan-board-template.md`
+- `skills/start-plan/scripts/plan-board.mjs`
+- `skills/start-work/references/delivery.md`
+- `skills/start-work/references/task-routing.md`
+- `skills/tdd/deep-modules.md`
+- `skills/tdd/interface-design.md`
+- `skills/tdd/mocking.md`
+- `skills/tdd/refactoring.md`
+- `skills/tdd/tests.md`
+- `skills/vue-conventions/bootstrapvue-gotchas.md`
+- `skills/vue-conventions/page-entry-lookup.md`
+- `skills/vue-testing/ac-tagging.md`
+- `skills/vue-testing/component-patterns.md`
+- `skills/vue-testing/unit-patterns.md`
+- `skills/xlsx/LICENSE.txt`
+- `skills/xlsx/scripts/office/helpers/__init__.py`
+- `skills/xlsx/scripts/office/helpers/merge_runs.py`
+- `skills/xlsx/scripts/office/helpers/simplify_redlines.py`
+- `skills/xlsx/scripts/office/pack.py`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chart.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-chartDrawing.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-diagram.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-lockedCanvas.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-main.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-picture.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-spreadsheetDrawing.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/dml-wordprocessingDrawing.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/pml.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-additionalCharacteristics.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-bibliography.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-commonSimpleTypes.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlDataProperties.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-customXmlSchemaProperties.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesCustom.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesExtended.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-documentPropertiesVariantTypes.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-math.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/shared-relationshipReference.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/sml.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-main.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-officeDrawing.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-presentationDrawing.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-spreadsheetDrawing.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/vml-wordprocessingDrawing.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/wml.xsd`
+- `skills/xlsx/scripts/office/schemas/ISO-IEC29500-4_2016/xml.xsd`
+- `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-contentTypes.xsd`
+- `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-coreProperties.xsd`
+- `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-digSig.xsd`
+- `skills/xlsx/scripts/office/schemas/ecma/fouth-edition/opc-relationships.xsd`
+- `skills/xlsx/scripts/office/schemas/mce/mc.xsd`
+- `skills/xlsx/scripts/office/schemas/microsoft/wml-2010.xsd`
+- `skills/xlsx/scripts/office/schemas/microsoft/wml-2012.xsd`
+- `skills/xlsx/scripts/office/schemas/microsoft/wml-2018.xsd`
+- `skills/xlsx/scripts/office/schemas/microsoft/wml-cex-2018.xsd`
+- `skills/xlsx/scripts/office/schemas/microsoft/wml-cid-2016.xsd`
+- `skills/xlsx/scripts/office/schemas/microsoft/wml-sdtdatahash-2020.xsd`
+- `skills/xlsx/scripts/office/schemas/microsoft/wml-symex-2015.xsd`
+- `skills/xlsx/scripts/office/soffice.py`
+- `skills/xlsx/scripts/office/unpack.py`
+- `skills/xlsx/scripts/office/validate.py`
+- `skills/xlsx/scripts/office/validators/__init__.py`
+- `skills/xlsx/scripts/office/validators/base.py`
+- `skills/xlsx/scripts/office/validators/docx.py`
+- `skills/xlsx/scripts/office/validators/pptx.py`
+- `skills/xlsx/scripts/office/validators/redlining.py`
+- `skills/xlsx/scripts/recalc.py`
+- `rules/development.md`
+- `rules/memory-contract.md`
+
+驗證與限制見 [validation](validation.md)，執行契約見 [runtime](runtime.md)。
+
+- `scripts/test.mjs`：跨 Node 版本及平台的測試檔列舉，非公開工具入口。

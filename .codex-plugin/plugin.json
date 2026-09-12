@@ -1,0 +1,22 @@
+{
+  "name": "aget-skill-repo",
+  "version": "0.1.0",
+  "description": "Goal-based development, research and portable task memory.",
+  "author": {
+    "name": "Aget contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Aget Work",
+    "shortDescription": "Development goals, evidence and portable handovers",
+    "longDescription": "Task-specific skills and Node tools for planning, development, research and verified memory finalization.",
+    "developerName": "Aget contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Complete the requested work with verifiable evidence."
+    ]
+  }
+}

@@ -5,6 +5,9 @@ description: Playwright E2E 測試撰寫通用指南。TRIGGER when 使用者提
 
 # Playwright E2E Testing Patterns
 
+以下範例按實際技術棧與任務使用；驗收以需求、實際行為及證據為準，不固定專案入口、Agent 或開發順序。
+
+
 ## Overview
 
 本 skill 提供 Playwright 測試撰寫的通用模式與最佳實踐，適用於任何 Angular / React / Vue 專案。
