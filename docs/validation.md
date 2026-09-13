@@ -60,4 +60,6 @@ Codex 核對 Claude 回寫的完整 diff SHA256 6cd3b94e8f59fad49cd920f884fc5e12
 - `claude --plugin-dir` 實際 session：debug log 顯示載入 30 skills、5 agents、註冊 6 hooks；模型列出 35 個 `aget-skill-repo:` 名稱。第一次實測發現 cwd 不在家目錄下時，plugin 與既有 user-scope setup hook 同時寫 journal，其中一個回報 WRITE_LOCKED；修正為 plugin 模式遇到家目錄的 setup hooks 安裝時讓出，重測只剩一個 Stop 輸出。
 - `npm test` 49/49、`npm run check` 通過；check 另檢查 marketplace source、plugin hook 腳本路徑，以及 README 是否列出所有 skills 與 agents。
 
-尚未驗證：從 GitHub 以 `jin576tw/Aget-skill-repo@start-work-plugin` 加入 marketplace（變更尚未推送），以及 Windows 上 `${CLAUDE_PLUGIN_ROOT}` 指令的執行。
+- 推送 e65ec77 後，以隔離 `CLAUDE_CONFIG_DIR` 執行 `claude plugin marketplace add jin576tw/Aget-skill-repo@start-work-plugin` 與 `claude plugin install aget-skill-repo@aget` 成功，快取含 30 skills、5 agents 與 hooks/hooks.json，狀態 enabled。
+
+尚未驗證：Windows 上 `${CLAUDE_PLUGIN_ROOT}` 指令的執行；GitHub 安裝後的 session 內 hook 實際觸發（本機以 `--plugin-dir` 驗證同一份檔案）。
