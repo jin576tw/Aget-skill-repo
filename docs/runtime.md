@@ -13,7 +13,7 @@ node scripts/setup-work.mjs --target /absolute/project --platform both --check
 
 `--platform` 可為 claude、codex、both。明確需要事件備援時加 `--hooks`，並以 `--vault /absolute/vault` 指定此安裝位置的每輪 journal vault（記入 `.aget/installation.json`）；後續更新沿用啟用狀態與 vault。工作專案需寫入其他 vault 時，在該專案以 project scope 另行安裝並指定自己的 `--vault`。預設安裝範圍是指定專案；user scope 使用 `--scope user --target /absolute/user-home`，規範放到 .claude/CLAUDE.md 及 .codex/AGENTS.md，既有 Node 不合要求時先使用環境受信任的安裝方式，不自建 runtime 管理器。工具放在目標 `.aget/plugin`，skills 由 `.agents/skills/aget-*` 與 `.claude/skills/aget-*` 發現；CLAUDE.md／AGENTS.md 只更新受管理區塊。原生 plugin 安裝與 setup 的 skills 發現二擇一，避免重複安裝同一能力。
 
-手動修改的受管理檔案或規範區塊報衝突；區塊外內容與其他 hooks 保留。缺少的受管理檔案可修復，新版移除的檔案僅按安裝清單與 hash 移除。首次安裝不會自動刪除先前無清單的全域副本；需先核對來源及差異。設定及 hook 信任由宿主管理，安裝成功不表示既有 session 已重載。Codex AGENTS.override.md 遮蔽時拒絕寫入失效目標。
+手動修改的受管理檔案或規範區塊報衝突；區塊外內容與其他 hooks 保留。缺少的受管理檔案可修復，新版移除的檔案僅按安裝清單與 hash 移除，並清除因此變空的 `.aget/plugin` 子目錄；目錄內仍有其他檔案（如 `.DS_Store`）時保留。首次安裝不會自動刪除先前無清單的全域副本；需先核對來源及差異。設定及 hook 信任由宿主管理，安裝成功不表示既有 session 已重載。Codex AGENTS.override.md 遮蔽時拒絕寫入失效目標。
 
 ## Claude Code plugin
 

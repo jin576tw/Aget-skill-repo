@@ -63,3 +63,8 @@ Codex 核對 Claude 回寫的完整 diff SHA256 6cd3b94e8f59fad49cd920f884fc5e12
 - 推送 e65ec77 後，以隔離 `CLAUDE_CONFIG_DIR` 執行 `claude plugin marketplace add jin576tw/Aget-skill-repo@start-work-plugin` 與 `claude plugin install aget-skill-repo@aget` 成功，快取含 30 skills、5 agents 與 hooks/hooks.json，狀態 enabled。
 
 尚未驗證：Windows 上 `${CLAUDE_PLUGIN_ROOT}` 指令的執行；GitHub 安裝後的 session 內 hook 實際觸發（本機以 `--plugin-dir` 驗證同一份檔案）。
+
+## 2026-09-13 setup 清除空目錄
+
+setup 更新移除舊檔後，逐層刪除變空的 `.aget/plugin` 子目錄，不越過 plugin 根目錄、不刪含其他檔案的目錄；rollback 還原檔案時重建目錄。新增測試先在修正前失敗（被移除 skill 的目錄仍存在），修正後通過。`npm test` 50/50（npm 使用 Node 20.5.0）、`npm run check` 通過。
+

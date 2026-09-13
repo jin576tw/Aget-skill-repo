@@ -349,11 +349,21 @@ export function setup(p) {
           fail("REMOVED_FILE_CONFLICT");
         const old = x.link ? null : fs.readFileSync(x.file);
         fs.unlinkSync(x.file);
-        undo.push(() =>
-          x.link
-            ? fs.symlinkSync(x.target, x.file, "dir")
-            : fs.writeFileSync(x.file, old),
-        );
+        undo.push(() => {
+          if (x.link) return fs.symlinkSync(x.target, x.file, "dir");
+          fs.mkdirSync(path.dirname(x.file), { recursive: true });
+          fs.writeFileSync(x.file, old);
+        });
+        // Git and unlink leave emptied directories behind; prune them up to the plugin root.
+        if (!x.link && x.rel.startsWith(".aget/plugin/")) {
+          const stop = path.join(root, ".aget/plugin");
+          for (
+            let d = path.dirname(x.file);
+            d.startsWith(stop + path.sep) && fs.readdirSync(d).length === 0;
+            d = path.dirname(d)
+          )
+            fs.rmdirSync(d);
+        }
       }
       atomic(
         manifestFile,

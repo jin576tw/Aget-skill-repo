@@ -215,3 +215,24 @@ test("update removes only unchanged previously managed files and links", (t) => 
   );
   assert.equal(fs.readFileSync(path.join(dir, "user-file"), "utf8"), "keep");
 });
+test("update prunes directories emptied by removed files but keeps stray files", (t) => {
+  const dir = target(t);
+  const source = target(t);
+  for (const d of ["skills", "agents", "rules"])
+    fs.cpSync(path.join(path.dirname(new URL(import.meta.url).pathname), "..", d), path.join(source, d), { recursive: true });
+  fs.mkdirSync(path.join(source, "skills/old-a/refs"), { recursive: true });
+  fs.mkdirSync(path.join(source, "skills/old-b"), { recursive: true });
+  for (const f of ["old-a/SKILL.md", "old-a/refs/x.md", "old-b/SKILL.md"])
+    fs.writeFileSync(path.join(source, "skills", f), "---\nname: x\ndescription: x\n---\n");
+  setup({ target: dir, source, platform: "codex" });
+  const plugin = path.join(dir, ".aget/plugin/skills");
+  fs.writeFileSync(path.join(plugin, "old-b/.DS_Store"), "");
+  fs.rmSync(path.join(source, "skills/old-a"), { recursive: true });
+  fs.rmSync(path.join(source, "skills/old-b"), { recursive: true });
+  assert.equal(setup({ target: dir, source, platform: "codex" }).signal, "SETUP_COMPLETE");
+  assert.equal(fs.existsSync(path.join(plugin, "old-a")), false);
+  assert.ok(fs.existsSync(path.join(plugin, "old-b/.DS_Store")));
+  assert.equal(fs.existsSync(path.join(plugin, "old-b/SKILL.md")), false);
+  assert.ok(fs.existsSync(path.join(plugin, "handover/SKILL.md")));
+  assert.equal(setup({ target: dir, source, platform: "codex", check: true }).signal, "SETUP_CURRENT");
+});
