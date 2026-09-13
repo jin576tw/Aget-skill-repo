@@ -356,6 +356,59 @@ test("Stop preserves retained journal bytes and handles a header without newline
   assert.equal(hook({ hook_event_name: "Stop", session_id: p.session, cwd: p.workspace }, {}, ["--vault", p.vault]).stdout, updated);
   assert.match(fs.readFileSync(log, "utf8"), /^# Log\n\n\[/);
 });
+test("--plugin stays silent without a vault and yields the journal to a setup installation", (t) => {
+  const { p, dir } = fixture(t);
+  const event = { hook_event_name: "Stop", session_id: p.session, cwd: p.workspace };
+  const home = { HOME: path.join(dir, "empty-home") };
+  const silent = hook(event, home, ["--plugin"]);
+  assert.equal(silent.status, 0);
+  assert.equal(silent.stdout, "");
+  const log = path.join(p.vault, "journal/log.md");
+  assert.equal(hook(event, { ...home, MEMORY_VAULT: p.vault }, ["--plugin"]).stdout, updated);
+  assert.match(fs.readFileSync(log, "utf8"), /<!-- aget-hook -->\n$/);
+  fs.rmSync(log);
+  fs.mkdirSync(path.join(p.workspace, ".aget"), { recursive: true });
+  fs.writeFileSync(
+    path.join(p.workspace, ".aget/installation.json"),
+    JSON.stringify({ hooks: true }),
+  );
+  assert.equal(hook(event, { ...home, MEMORY_VAULT: p.vault }, ["--plugin"]).stdout, "");
+  assert.equal(fs.existsSync(log), false);
+});
+test("--plugin yields the journal to a user-scope setup install outside the cwd tree", (t) => {
+  const { p, dir } = fixture(t);
+  const home = path.join(dir, "home");
+  fs.mkdirSync(path.join(home, ".aget"), { recursive: true });
+  const event = { hook_event_name: "Stop", session_id: p.session, cwd: p.workspace };
+  const env = { MEMORY_VAULT: p.vault, HOME: home };
+  assert.equal(hook(event, env, ["--plugin"]).stdout, updated);
+  fs.rmSync(path.join(p.vault, "journal/log.md"));
+  fs.writeFileSync(
+    path.join(home, ".aget/installation.json"),
+    JSON.stringify({ hooks: true }),
+  );
+  assert.equal(hook(event, env, ["--plugin"]).stdout, "");
+  assert.equal(fs.existsSync(path.join(p.vault, "journal/log.md")), false);
+  assert.equal(hook(event, env).stdout, updated);
+});
+test("plugin hooks.json runs record.mjs for every Claude setup event", () => {
+  const config = JSON.parse(
+    fs.readFileSync(path.join(root, "hooks/hooks.json"), "utf8"),
+  );
+  assert.deepEqual(Object.keys(config.hooks).sort(), [
+    "Notification",
+    "PreCompact",
+    "SessionEnd",
+    "Stop",
+    "SubagentStop",
+    "TaskCompleted",
+  ]);
+  for (const entries of Object.values(config.hooks))
+    assert.equal(
+      entries[0].hooks[0].command,
+      'node "${CLAUDE_PLUGIN_ROOT}/hooks/record.mjs" --plugin',
+    );
+});
 test("SubagentStop and Notification never write the journal", (t) => {
   const { p } = fixture(t);
   for (const hook_event_name of ["SubagentStop", "Notification"]) {

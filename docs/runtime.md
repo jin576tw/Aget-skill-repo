@@ -11,9 +11,13 @@ node scripts/setup-work.mjs --target /absolute/project --platform both
 node scripts/setup-work.mjs --target /absolute/project --platform both --check
 ```
 
-`--platform` 可為 claude、codex、both。明確需要事件備援時加 `--hooks`，並以 `--vault /absolute/vault` 指定此安裝位置的每輪 journal vault（記入 `.aget/installation.json`）；後續更新沿用啟用狀態與 vault。工作專案需寫入其他 vault 時，在該專案以 project scope 另行安裝並指定自己的 `--vault`。預設安裝範圍是指定專案；user scope 使用 `--scope user --target /absolute/user-home`，規範放到 .claude/CLAUDE.md 及 .codex/AGENTS.md，既有 Node 不合要求時先使用環境受信任的安裝方式，不自建 runtime 管理器。工具放在目標 `.aget/plugin`，skills 由 `.agents/skills/aget-*` 與 `.claude/skills/aget-*` 發現；CLAUDE.md／AGENTS.md 只更新受管理區塊。原生 plugin 安裝與 setup 的 skills 發現二擇一，避免重複安裝同一能力；本 repo 的 plugin manifests 可供宿主原生安裝。
+`--platform` 可為 claude、codex、both。明確需要事件備援時加 `--hooks`，並以 `--vault /absolute/vault` 指定此安裝位置的每輪 journal vault（記入 `.aget/installation.json`）；後續更新沿用啟用狀態與 vault。工作專案需寫入其他 vault 時，在該專案以 project scope 另行安裝並指定自己的 `--vault`。預設安裝範圍是指定專案；user scope 使用 `--scope user --target /absolute/user-home`，規範放到 .claude/CLAUDE.md 及 .codex/AGENTS.md，既有 Node 不合要求時先使用環境受信任的安裝方式，不自建 runtime 管理器。工具放在目標 `.aget/plugin`，skills 由 `.agents/skills/aget-*` 與 `.claude/skills/aget-*` 發現；CLAUDE.md／AGENTS.md 只更新受管理區塊。原生 plugin 安裝與 setup 的 skills 發現二擇一，避免重複安裝同一能力。
 
 手動修改的受管理檔案或規範區塊報衝突；區塊外內容與其他 hooks 保留。缺少的受管理檔案可修復，新版移除的檔案僅按安裝清單與 hash 移除。首次安裝不會自動刪除先前無清單的全域副本；需先核對來源及差異。設定及 hook 信任由宿主管理，安裝成功不表示既有 session 已重載。Codex AGENTS.override.md 遮蔽時拒絕寫入失效目標。
+
+## Claude Code plugin
+
+`.claude-plugin/marketplace.json` 宣告 marketplace `aget`，唯一 plugin `aget-skill-repo` 的 source 為 repo 根目錄；安裝指令見 [README](../README.md#a-claude-code-plugin)。plugin 由預設目錄載入 skills、agents 與 `hooks/hooks.json`，不寫 CLAUDE.md 規範區塊。`hooks/hooks.json` 以 `--plugin` 呼叫 record.mjs，事件與 setup 的 Claude hooks 相同。plugin 模式沒有 `--hooks` 開關，因此未設定 `MEMORY_VAULT` 時不寫 journal 也不輸出訊息；cwd 往上或家目錄已有啟用 hooks 的 setup 安裝時，journal 讓給該安裝。checkpoint flush 仍會執行，重複 flush 由鎖與 pending 刪除處理。Codex manifest 不使用此 hooks.json。
 
 ## checkpoint 輸入
 

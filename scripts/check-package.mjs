@@ -48,6 +48,39 @@ for (const host of [".claude-plugin", ".codex-plugin"]) {
   );
   if (!m.name || !m.version) errors.push("Invalid manifest: " + host);
 }
+const market = JSON.parse(
+  fs.readFileSync(path.join(sourceRoot, ".claude-plugin/marketplace.json")),
+);
+if (!market.name || !market.owner?.name || !Array.isArray(market.plugins))
+  errors.push("Invalid marketplace manifest");
+for (const entry of market.plugins ?? [])
+  if (
+    typeof entry.source !== "string" ||
+    !fs.existsSync(
+      path.join(sourceRoot, entry.source, ".claude-plugin/plugin.json"),
+    )
+  )
+    errors.push("Marketplace plugin source missing: " + entry.name);
+const pluginHooks = JSON.parse(
+  fs.readFileSync(path.join(sourceRoot, "hooks/hooks.json")),
+);
+for (const entries of Object.values(pluginHooks.hooks))
+  for (const { hooks } of entries)
+    for (const { command } of hooks)
+      for (const [, rel] of command.matchAll(/\$\{CLAUDE_PLUGIN_ROOT\}\/([^"\s]+)/g))
+        if (!fs.existsSync(path.join(sourceRoot, rel)))
+          errors.push("Plugin hook script missing: " + rel);
+// The README tool tables are the user-facing index, so every shipped skill and agent must appear there.
+const readme = fs.readFileSync(path.join(sourceRoot, "README.md"), "utf8");
+for (const name of fs.readdirSync(path.join(sourceRoot, "skills")))
+  if (
+    fs.existsSync(path.join(sourceRoot, "skills", name, "SKILL.md")) &&
+    !readme.includes(`(skills/${name}/SKILL.md)`)
+  )
+    errors.push("README missing skill: " + name);
+for (const name of fs.readdirSync(path.join(sourceRoot, "agents")))
+  if (name.endsWith(".md") && !readme.includes(`(agents/${name})`))
+    errors.push("README missing agent: " + name);
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exitCode = 1;

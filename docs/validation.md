@@ -50,3 +50,14 @@ Claude Code 桌面版回寫：Opus 5 規劃、Sonnet 5 執行獨立 context，A 
 Codex 核對 Claude 回寫的完整 diff SHA256 6cd3b94e8f59fad49cd920f884fc5e12497ea15ee100878a94e06cae627b4ae8 與工作樹一致（本段新增前）。實際檢視 fixture／patch／紅綠紀錄，使用 bundled Node 24 重跑 A＋B，8/8 通過；另核對大小寫敏感與空白邊界通過。package 與 diff 檢查通過，允許發布本輪 Markdown 修正。
 
 本機證據索引：`/Users/jjin576tw/Desktop/aget-claude-scenarios-20260913/evidence/README.md`。小樣本重測不能證明因果改善；真實 UI、登入 fixture、Windows、自然路由、跨模型多次取樣仍未驗證。Codex 模型未針對 Claude 新增的一句提示另做獨立生成重測，不以本次 fixture 重跑冒充該項驗證。
+
+## 2026-09-13 Claude Code plugin 安裝
+
+新增 `.claude-plugin/marketplace.json`、`hooks/hooks.json` 與 record.mjs 的 `--plugin` 模式，README 改寫為安裝說明與工具總表。
+
+- `claude plugin validate .` 與 `.claude-plugin/plugin.json` 驗證通過（Claude Code 2.1.263）。
+- 以隔離 `CLAUDE_CONFIG_DIR` 執行 `claude plugin marketplace add <本機 repo 路徑>` 與 `claude plugin install aget-skill-repo@aget` 成功，`plugin list` 顯示 enabled。
+- `claude --plugin-dir` 實際 session：debug log 顯示載入 30 skills、5 agents、註冊 6 hooks；模型列出 35 個 `aget-skill-repo:` 名稱。第一次實測發現 cwd 不在家目錄下時，plugin 與既有 user-scope setup hook 同時寫 journal，其中一個回報 WRITE_LOCKED；修正為 plugin 模式遇到家目錄的 setup hooks 安裝時讓出，重測只剩一個 Stop 輸出。
+- `npm test` 49/49、`npm run check` 通過；check 另檢查 marketplace source、plugin hook 腳本路徑，以及 README 是否列出所有 skills 與 agents。
+
+尚未驗證：從 GitHub 以 `jin576tw/Aget-skill-repo@start-work-plugin` 加入 marketplace（變更尚未推送），以及 Windows 上 `${CLAUDE_PLUGIN_ROOT}` 指令的執行。

@@ -1,0 +1,19 @@
+{
+  "name": "aget",
+  "owner": {
+    "name": "Aget contributors",
+    "url": "https://github.com/jin576tw"
+  },
+  "metadata": {
+    "description": "Aget Work: goal-based development skills, agents and portable task memory for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "aget-skill-repo",
+      "source": "./",
+      "description": "Goal-based development and portable task memory",
+      "repository": "https://github.com/jin576tw/Aget-skill-repo",
+      "category": "productivity"
+    }
+  ]
+}

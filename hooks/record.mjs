@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -80,12 +81,21 @@ let installRoot = path.resolve(fileURLToPath(import.meta.url), "../../../..");
 try {
   installRoot = fs.realpathSync(installRoot);
 } catch {}
+const i = process.argv.indexOf("--vault");
+const vault = i > 0 ? process.argv[i + 1] : process.env.MEMORY_VAULT;
+// A native plugin has no opt-in flag, so its journal stays silent until MEMORY_VAULT is configured.
+// It also yields to a user-scope setup install, whose hooks run for every cwd, not only those under home.
+const plugin = process.argv.includes("--plugin");
+const optedOut =
+  plugin && (!vault || (!owner && journalOwner(os.homedir()) !== null));
 // Each main-turn Stop appends one mechanical journal line; handover and finalize stay model-driven.
-if (event.hook_event_name === "Stop" && (!owner || owner === installRoot)) {
+if (
+  event.hook_event_name === "Stop" &&
+  !optedOut &&
+  (!owner || owner === installRoot)
+) {
   let message = "Memory has updated!";
   try {
-    const i = process.argv.indexOf("--vault");
-    const vault = i > 0 ? process.argv[i + 1] : process.env.MEMORY_VAULT;
     if (!vault) throw Error("VAULT_NOT_CONFIGURED");
     const mark = "<!-- aget-hook -->";
     const now = new Date();
