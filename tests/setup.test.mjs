@@ -99,6 +99,38 @@ test("both installed host commands write Stop journals and ignore SubagentStop",
     fs.renameSync(vault + "-saved", vault);
   }
 });
+test("nearest hooks installation above cwd owns the Stop journal", (t) => {
+  const home = target(t);
+  const project = path.join(home, "work", "proj");
+  const other = path.join(home, "elsewhere");
+  const personal = path.join(home, "personal");
+  const work = path.join(home, "work-vault");
+  for (const dir of [project, other, personal + "/journal", work + "/journal"])
+    fs.mkdirSync(dir, { recursive: true });
+  setup({ target: home, scope: "user", platform: "both", hooks: true, vault: personal });
+  setup({ target: project, platform: "both", hooks: true, vault: work });
+  const commands = (root) =>
+    [".claude/settings.json", ".codex/hooks.json"].map(
+      (rel) => JSON.parse(fs.readFileSync(path.join(root, rel))).hooks.Stop.at(-1).hooks[0].command,
+    );
+  const lines = (vault) => {
+    const log = path.join(vault, "journal/log.md");
+    return fs.existsSync(log) ? (fs.readFileSync(log, "utf8").match(/aget-hook/g) || []).length : 0;
+  };
+  const runAll = (cwd) => {
+    for (const cmd of [...commands(home), ...commands(project)]) {
+      const r = spawnSync(cmd, {
+        shell: true, cwd, encoding: "utf8",
+        input: JSON.stringify({ hook_event_name: "Stop", session_id: "owner", cwd, last_assistant_message: "owner" }),
+      });
+      assert.equal(r.status, 0, r.stderr);
+    }
+  };
+  runAll(project);
+  assert.deepEqual([lines(personal), lines(work)], [0, 2]);
+  runAll(other);
+  assert.deepEqual([lines(personal), lines(work)], [2, 2]);
+});
 test("shadowed instructions and preexisting skill directory are not overwritten", (t) => {
   const dir = target(t);
   fs.writeFileSync(path.join(dir, "AGENTS.override.md"), "override");

@@ -9,7 +9,7 @@ description: 首次準備、更新或修復 Aget 工具、CLAUDE.md／AGENTS.md 
 
 目標專案具有可發現的 skills、可執行 Node 工具及薄規範；保留人工設定及其他工具。
 
-使用 plugin 根目錄的 `node scripts/setup-work.mjs --target <project> --platform both`；檢查用 `--check`。user scope 加 `--scope user --target <user-home>`，使用各宿主的使用者規範位置。只有需要紀錄事件時加 `--hooks`。Node >=18，核心不需 npm 依賴；缺 Node 時使用環境既有受信任套件管理器，不另安裝私有 runtime 或修改整機 PATH。文件轉換的選用依賴僅在需求確立時安裝到專案，不預設全域 npm install。
+使用 plugin 根目錄的 `node scripts/setup-work.mjs --target <project> --platform both`；檢查用 `--check`。user scope 加 `--scope user --target <user-home>`，使用各宿主的使用者規範位置。只有需要紀錄事件時加 `--hooks`，並以 `--vault <absolute-vault>` 指定此安裝位置的每輪 journal vault；工作專案要寫到自己的 vault 時，以 project scope 安裝到該專案。cwd 往上最近的安裝負責寫入。Node >=18，核心不需 npm 依賴；缺 Node 時使用環境既有受信任套件管理器，不另安裝私有 runtime 或修改整機 PATH。文件轉換的選用依賴僅在需求確立時安裝到專案，不預設全域 npm install。
 
 ## 驗收與邊界
 

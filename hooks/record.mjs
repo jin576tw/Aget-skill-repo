@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   sha,
   read,
@@ -59,8 +60,28 @@ try {
     "aget: checkpoint not flushed; inspect pending request and retry during normal work\n",
   );
 }
+// The nearest hooks-enabled installation above cwd owns the journal, so user and project hooks never both write.
+function journalOwner(cwd) {
+  let dir = typeof cwd === "string" ? path.resolve(cwd) : null;
+  while (dir) {
+    try {
+      const manifest = JSON.parse(
+        fs.readFileSync(path.join(dir, ".aget/installation.json"), "utf8"),
+      );
+      if (manifest.hooks) return fs.realpathSync(dir);
+    } catch {}
+    const parent = path.dirname(dir);
+    dir = parent === dir ? null : parent;
+  }
+  return null;
+}
+const owner = journalOwner(event.cwd);
+let installRoot = path.resolve(fileURLToPath(import.meta.url), "../../../..");
+try {
+  installRoot = fs.realpathSync(installRoot);
+} catch {}
 // Each main-turn Stop appends one mechanical journal line; handover and finalize stay model-driven.
-if (event.hook_event_name === "Stop") {
+if (event.hook_event_name === "Stop" && (!owner || owner === installRoot)) {
   let message = "Memory has updated!";
   try {
     const i = process.argv.indexOf("--vault");
