@@ -50,13 +50,15 @@ export function hookCommand(
   node,
   script,
   windows = process.platform === "win32",
+  args = [],
 ) {
+  const parts = [node, script, ...args];
   if (windows) {
-    if (/[\r\n%!"`$]/.test(node + script)) fail("HOOK_PATH_UNSUPPORTED");
-    return '"' + node + '" "' + script + '"';
+    if (/[\r\n%!"`$]/.test(parts.join(""))) fail("HOOK_PATH_UNSUPPORTED");
+    return parts.map((s) => '"' + s + '"').join(" ");
   }
   const quote = (s) => "'" + s.replaceAll("'", "'\"'\"'") + "'";
-  return quote(node) + " " + quote(script);
+  return parts.map(quote).join(" ");
 }
 export function setup(p) {
   if (Number(process.versions.node.split(".")[0]) < 18)
@@ -184,6 +186,9 @@ export function setup(p) {
           );
     // Opt-in hooks are merged independently for each host, preserving unrelated handlers.
     const hooksEnabled = p.hooks ?? previous.hooks ?? false;
+    // Hosts without MEMORY_VAULT (Codex) need the vault passed to the per-turn journal hook.
+    const vault = p.vault ?? previous.vault ?? null;
+    const hookArgs = vault ? ["--vault", vault] : [];
     if (hooksEnabled) {
       for (const host of platform === "both"
         ? ["claude", "codex"]
@@ -196,6 +201,8 @@ export function setup(p) {
         const cmd = hookCommand(
           process.execPath,
           path.join(root, ".aget/plugin/hooks/record.mjs"),
+          undefined,
+          hookArgs,
         );
         config.hooks ??= {};
         const events =
@@ -278,10 +285,13 @@ export function setup(p) {
       scope,
       platform,
       hooks: hooksEnabled,
+      vault,
       hookCommand: hooksEnabled
         ? hookCommand(
             process.execPath,
             path.join(root, ".aget/plugin/hooks/record.mjs"),
+            undefined,
+            hookArgs,
           )
         : null,
       files: owned,

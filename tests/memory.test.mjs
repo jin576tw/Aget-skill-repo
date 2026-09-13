@@ -280,6 +280,93 @@ test("legacy migration explicit and hash-protected; board cannot be overwritten"
   );
   assert.equal(parseCheckpoint(fs.readFileSync(file, "utf8")).task, p.task);
 });
+// Per-turn journal hook: MEMORY_VAULT is always scrubbed so tests never touch a real vault.
+function hook(input, env = {}, args = []) {
+  const { MEMORY_VAULT, ...base } = process.env;
+  return spawnSync(
+    process.execPath,
+    [path.join(root, "hooks/record.mjs"), ...args],
+    { input: JSON.stringify(input), encoding: "utf8", env: { ...base, ...env } },
+  );
+}
+const noVault =
+  JSON.stringify({ systemMessage: "Memory 未更新：VAULT_NOT_CONFIGURED" }) + "\n";
+const updated = JSON.stringify({ systemMessage: "Memory has updated!" }) + "\n";
+test("Stop appends one hook journal entry and prunes only expired hook entries", (t) => {
+  const { p } = fixture(t);
+  const log = path.join(p.vault, "journal/log.md");
+  fs.mkdirSync(path.dirname(log));
+  const manualOld = "[2025-01-01T00:00:00.000+08:00][demo] 手寫舊條目";
+  const hookOld =
+    "[2025-01-01T00:00:00.000+08:00][work] 過期 hook 條目 <!-- aget-hook -->";
+  fs.writeFileSync(log, `# Log\n\n${hookOld}\n\n${manualOld}\n`);
+  const out = hook(
+    {
+      hook_event_name: "Stop",
+      session_id: p.session,
+      cwd: p.workspace,
+      last_assistant_message: "完成第一行\n第二行" + "字".repeat(300),
+    },
+    { MEMORY_VAULT: p.vault },
+  );
+  assert.equal(out.status, 0, out.stderr);
+  assert.equal(out.stdout, updated);
+  const lines = fs.readFileSync(log, "utf8").split("\n");
+  assert.equal(lines[0], "# Log");
+  assert.match(
+    lines[2],
+    /^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}\]\[work\] 完成第一行 第二行字+ <!-- aget-hook -->$/,
+  );
+  assert.ok(lines[2].length < 280);
+  const text = lines.join("\n");
+  assert.ok(!text.includes("過期 hook 條目"));
+  assert.ok(text.includes(manualOld));
+});
+test("--vault overrides MEMORY_VAULT and a missing vault is reported without writing", (t) => {
+  const { p, dir } = fixture(t);
+  const missing = path.join(dir, "missing-vault");
+  const event = { hook_event_name: "Stop", session_id: p.session, cwd: p.workspace };
+  const failed = hook(event, { MEMORY_VAULT: p.vault }, ["--vault", missing]);
+  assert.equal(failed.status, 0);
+  assert.match(JSON.parse(failed.stdout).systemMessage, /^Memory 未更新：/);
+  assert.equal(fs.existsSync(path.join(p.vault, "journal/log.md")), false);
+  const ok = hook(event, {}, ["--vault", p.vault]);
+  assert.equal(ok.stdout, updated);
+  assert.match(
+    fs.readFileSync(path.join(p.vault, "journal/log.md"), "utf8"),
+    /^# Log\n\n\[.+\]\[work\] .+ <!-- aget-hook -->\n$/,
+  );
+});
+test("Stop preserves retained journal bytes and handles a header without newline", (t) => {
+  const { p } = fixture(t);
+  const log = path.join(p.vault, "journal/log.md");
+  fs.mkdirSync(path.dirname(log));
+  for (const eol of ["\n", "\r\n"]) {
+    const manual = `${eol}手寫 A${eol}${eol}${eol}手寫 B${eol}`;
+    const expired = `[2000-01-01T00:00:00+08:00][work] old <!-- aget-hook -->${eol}`;
+    fs.writeFileSync(log, `# Log${eol}${expired}${manual}`);
+    const out = hook({ hook_event_name: "Stop", session_id: p.session, cwd: p.workspace }, {}, ["--vault", p.vault]);
+    assert.equal(out.stdout, updated);
+    const text = fs.readFileSync(log, "utf8");
+    const end = text.indexOf("<!-- aget-hook -->") + "<!-- aget-hook -->".length;
+    assert.equal(text.slice(end), eol + manual);
+    assert.ok(text.startsWith(`# Log${eol}${eol}[`));
+  }
+  fs.writeFileSync(log, "# Log");
+  assert.equal(hook({ hook_event_name: "Stop", session_id: p.session, cwd: p.workspace }, {}, ["--vault", p.vault]).stdout, updated);
+  assert.match(fs.readFileSync(log, "utf8"), /^# Log\n\n\[/);
+});
+test("SubagentStop and Notification never write the journal", (t) => {
+  const { p } = fixture(t);
+  for (const hook_event_name of ["SubagentStop", "Notification"]) {
+    const out = hook(
+      { hook_event_name, session_id: p.session, cwd: p.workspace, last_assistant_message: "x" },
+      { MEMORY_VAULT: p.vault },
+    );
+    assert.equal(out.stdout, "");
+  }
+  assert.equal(fs.existsSync(path.join(p.vault, "journal/log.md")), false);
+});
 test("Stop idle clear flush same pending revision once, no automatic finalize", (t) => {
   const { p, file } = fixture(t);
   const pending = path.join(p.workspace, ".aget/pending");
@@ -288,20 +375,13 @@ test("Stop idle clear flush same pending revision once, no automatic finalize", 
   const payload = JSON.stringify(p);
   fs.writeFileSync(request, payload);
   for (const hook_event_name of ["Stop", "Notification", "SessionEnd"]) {
-    const out = spawnSync(
-      process.execPath,
-      [path.join(root, "hooks/record.mjs")],
-      {
-        input: JSON.stringify({
-          hook_event_name,
-          session_id: p.session,
-          cwd: p.workspace,
-        }),
-        encoding: "utf8",
-      },
-    );
+    const out = hook({
+      hook_event_name,
+      session_id: p.session,
+      cwd: p.workspace,
+    });
     assert.equal(out.status, 0);
-    assert.equal(out.stdout, "");
+    assert.equal(out.stdout, hook_event_name === "Stop" ? noVault : "");
   }
   assert.ok(fs.existsSync(file));
   assert.equal(parseCheckpoint(fs.readFileSync(file, "utf8")).revision, 1);
@@ -323,16 +403,9 @@ test("unsupported event, missing summary and session mismatch never write handov
     { hook_event_name: "Stop", session_id: "other" },
     { hook_event_name: "Stop", session_id: p.session },
   ]) {
-    const result = spawnSync(
-      process.execPath,
-      [path.join(root, "hooks/record.mjs")],
-      {
-        input: JSON.stringify({ ...event, cwd: p.workspace }),
-        encoding: "utf8",
-      },
-    );
+    const result = hook({ ...event, cwd: p.workspace });
     assert.equal(result.status, 0);
-    assert.equal(result.stdout, "");
+    assert.equal(result.stdout, event.hook_event_name === "Stop" ? noVault : "");
   }
   assert.equal(fs.existsSync(file), false);
 });
@@ -434,19 +507,12 @@ test("staged complete checkpoint is downgraded by deferred event", (t) => {
     path.join(pending, sha(p.session) + ".json"),
     JSON.stringify(done(p)),
   );
-  const out = spawnSync(
-    process.execPath,
-    [path.join(root, "hooks/record.mjs")],
-    {
-      input: JSON.stringify({
-        hook_event_name: "Stop",
-        session_id: p.session,
-        cwd: p.workspace,
-        background_tasks: ["work"],
-      }),
-      encoding: "utf8",
-    },
-  );
+  const out = hook({
+    hook_event_name: "Stop",
+    session_id: p.session,
+    cwd: p.workspace,
+    background_tasks: ["work"],
+  });
   assert.equal(out.status, 0);
   assert.equal(parseCheckpoint(fs.readFileSync(file, "utf8")).status, "active");
   assert.throws(() => finalize(finish(p, digest(file))), /GOALS_NOT_COMPLETE/);

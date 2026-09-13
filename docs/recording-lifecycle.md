@@ -8,12 +8,13 @@ checkpoint 的目標是跨 Agent 可接續，finalize 的目標是完成且可�
 |---|---|
 | 有意義里程碑 | 模型立即 checkpoint，保存全目標、證據、決策及下一步 |
 | 明確暫停任務 | paused checkpoint，保留未完成與恢復條件 |
+| 每輪回覆結束（主輪 Stop） | 在 vault `journal/log.md` 最上方追加一行機械紀錄（時間、workspace、回覆首段），刪除 90 天前的 hook 條目，並以 systemMessage 顯示結果；不是 handover 或 finalize |
 | 回覆／等待／中斷 | 宿主支援事件 flush 已整理的 pending request |
 | compact／clear／結束 | 僅補存現有 request，不能退出時才生成摘要 |
 | 子任務結束 | 不推導全案完成 |
 | 全部目標驗收 | 正常工作 finalize：蒸餾、來源與 status 驗證成功才刪 handover |
 
-Pending 每個 session 一條任務，切換前先 flush，跨任務覆蓋會被拒絕。相同 checkpoint 不重寫。延遲的 completed request 會降為 active／未知在途，避免沿用過期完成判斷。事件沒有 request 就無寫入，不掃 transcript、不呼叫模型，不阻擋退出或觸發反覆 Stop。
+Pending 每個 session 一條任務，切換前先 flush，跨任務覆蓋會被拒絕。相同 checkpoint 不重寫。延遲的 completed request 會降為 active／未知在途，避免沿用過期完成判斷。事件沒有 request 就不寫 handover，不掃 transcript、不呼叫模型，不阻擋退出或觸發反覆 Stop。
 
 結案三種蒸餾結果：new 保存新知識與來源；existing 連回既有知識；none 在 status 說明無新知識理由。全目標 pass、有實際證據、inflight 已知為空；只有測試 exit 0 不足以宣稱完成。機器檢查資料一致性，模型仍負責判斷驗收與蒸餾內容。
 
@@ -22,7 +23,8 @@ flowchart TD
     A[目標／證據有變更] --> B[checkpoint 單檔保存]
     E[宿主事件] --> P{已有 pending request？}
     P -->|是| B
-    P -->|否| N[不寫入]
+    P -->|否| N[不寫 handover]
+    E -->|主輪 Stop| J[journal/log.md 追加一行並顯示結果]
     G[全部目標驗收] --> K[蒸餾與穩定來源]
     K --> S[該任務 status 區塊]
     S --> V{讀回與版本核對成功？}

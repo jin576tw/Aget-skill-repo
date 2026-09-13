@@ -7,11 +7,14 @@ import {
   safe,
   workspaceInfo,
   locked,
+  atomic,
+  digest,
 } from "../scripts/lib/files.mjs";
 import { checkpoint } from "../scripts/lib/memory.mjs";
 // Host signals never authorize finalization. Only flush a model-authored pending checkpoint.
+let event = {};
 try {
-  const event = JSON.parse(fs.readFileSync(0, "utf8"));
+  event = JSON.parse(fs.readFileSync(0, "utf8"));
   const allowed = [
     "Stop",
     "Notification",
@@ -55,4 +58,54 @@ try {
   process.stderr.write(
     "aget: checkpoint not flushed; inspect pending request and retry during normal work\n",
   );
+}
+// Each main-turn Stop appends one mechanical journal line; handover and finalize stay model-driven.
+if (event.hook_event_name === "Stop") {
+  let message = "Memory has updated!";
+  try {
+    const i = process.argv.indexOf("--vault");
+    const vault = i > 0 ? process.argv[i + 1] : process.env.MEMORY_VAULT;
+    if (!vault) throw Error("VAULT_NOT_CONFIGURED");
+    const mark = "<!-- aget-hook -->";
+    const now = new Date();
+    const offset = -now.getTimezoneOffset();
+    const pad = (n) => String(Math.abs(n)).padStart(2, "0");
+    const time =
+      new Date(now.getTime() + offset * 60000).toISOString().slice(0, -1) +
+      (offset < 0 ? "-" : "+") +
+      pad(Math.trunc(offset / 60)) +
+      ":" +
+      pad(offset % 60);
+    const topic =
+      typeof event.cwd === "string" ? path.basename(event.cwd) : "unknown";
+    const said =
+      String(event.last_assistant_message ?? "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 200) || "（無回覆內容）";
+    const entry = `[${time}][${topic}] ${said} ${mark}`;
+    const expired = now.getTime() - 90 * 86400000;
+    const log = safe(vault, "journal/log.md");
+    locked(vault, () => {
+      const old = read(log) ?? "# Log\n";
+      // Keep every retained line byte-for-byte, including manual spacing and CRLF.
+      const kept = (old.match(/[^\n]*\n|[^\n]+$/g) ?? [])
+        .filter((line) => {
+          const content = line.replace(/\r?\n$/, "");
+          const stamp = content.match(/^\[([^\]]+)\]/);
+          return !content.endsWith(mark) || !stamp ||
+            !(Date.parse(stamp[1]) < expired);
+        })
+        .join("");
+      const eol = old.includes("\r\n") ? "\r\n" : "\n";
+      const header = kept.match(/^# [^\r\n]*(?:\r?\n|$)/)?.[0] ?? "";
+      const body = kept.slice(header.length);
+      const prefix = header && !header.endsWith("\n") ? header + eol : header;
+      const text = prefix + (header ? eol : "") + entry + eol + body;
+      atomic(log, text, digest(log));
+    });
+  } catch (e) {
+    message = "Memory 未更新：" + (e.code || e.message);
+  }
+  process.stdout.write(JSON.stringify({ systemMessage: message }) + "\n");
 }

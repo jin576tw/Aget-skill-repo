@@ -94,6 +94,10 @@ test("hook commands preserve POSIX shell characters and Windows backslashes", ()
     hookCommand("C:\\node\\node.exe", "C:\\工作 空間\\record.mjs", true),
     '"C:\\node\\node.exe" "C:\\工作 空間\\record.mjs"',
   );
+  assert.equal(
+    hookCommand("/a/node", "/r.mjs", false, ["--vault", "/v"]),
+    "'/a/node' '/r.mjs' '--vault' '/v'",
+  );
   assert.throws(
     () => hookCommand("node", "C:\\%TEMP%\\script", true),
     /UNSUPPORTED/,

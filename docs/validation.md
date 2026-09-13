@@ -6,7 +6,7 @@
 - 官方 skill validator：30 skills 通過。
 - 官方 plugin validator：Codex manifest 通過；Claude plugin validate 通過。
 - 實際 Codex app-server 0.153.4：隔離專案的 skills/list 找到全部 30 個 Aget skills，hooks/list 找到 6 個對應事件，無解析錯誤／警告；hook trust 仍為 untrusted，未繞過信任。
-- Hook payload fixtures 驗證 flush、無資料／錯誤輸入／錯 session 不寫入；這不等於宿主已執行所有事件。
+- Hook payload fixtures 驗證 flush、無資料／錯誤輸入／錯 session 不寫 handover，主輪 Stop 追加 journal 並只清過期 hook 條目；這不等於宿主已執行所有事件。
 
 2026-09-12 已在 macOS 以 user scope 安裝 Claude＋Codex 與 hooks；首次安裝回傳 `SETUP_COMPLETE`（30 skills），讀回檢查回傳 `SETUP_CURRENT`、changes／removed 皆空。檔案清冊確認 `.agents/skills` 與 `.claude/skills` 各 30 個可讀 `aget-*` skill、Claude 5 個 `aget-*` agent，兩宿主 hook 事件均已寫入且既有 hooks 保留。這證明安裝器在目前 macOS 使用者層的落地與冪等性，不證明既有 session 已重載或模型已正確路由。
 

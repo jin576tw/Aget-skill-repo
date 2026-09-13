@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { setup } from "../scripts/lib/setup.mjs";
 function target(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aget-setup-"));
@@ -54,6 +55,49 @@ test("hooks are host-specific, repeated setup preserves unrelated hooks", (t) =>
   assert.equal(codex.hooks.Notification, undefined);
   assert.ok(codex.hooks.Interrupt);
   assert.equal(codex.hooks.SessionEnd[0].hooks[0].timeout, 3);
+});
+test("hook vault argument is added once and kept on later setup", (t) => {
+  const dir = target(t);
+  setup({ target: dir, hooks: true, vault: "/v a'ult" });
+  setup({ target: dir });
+  const codex = JSON.parse(fs.readFileSync(path.join(dir, ".codex/hooks.json")));
+  assert.equal(codex.hooks.Stop.length, 1);
+  assert.match(codex.hooks.Stop[0].hooks[0].command, / '--vault' '\/v a'"'"'ult'$/);
+});
+test("both installed host commands write Stop journals and ignore SubagentStop", (t) => {
+  const dir = target(t);
+  const vault = path.join(dir, "vault 空間");
+  fs.mkdirSync(path.join(vault, "journal"), { recursive: true });
+  setup({ target: dir, platform: "both", hooks: true, vault });
+  const log = path.join(vault, "journal/log.md");
+  for (const config of [".claude/settings.json", ".codex/hooks.json"]) {
+    const { hooks } = JSON.parse(fs.readFileSync(path.join(dir, config)));
+    const run = (event) => spawnSync(hooks[event][0].hooks[0].command, {
+      shell: true,
+      cwd: dir,
+      input: JSON.stringify({
+        hook_event_name: event, session_id: "host-test", cwd: dir,
+        stop_hook_active: false, last_assistant_message: "相容測試 OK",
+      }),
+      encoding: "utf8",
+      env: { ...process.env, MEMORY_VAULT: path.join(dir, "wrong-vault") },
+    });
+    fs.writeFileSync(log, "", { flag: "a" });
+    const before = fs.readFileSync(log, "utf8");
+    const sub = run("SubagentStop");
+    assert.equal(sub.status, 0, sub.stderr);
+    assert.equal(fs.readFileSync(log, "utf8"), before);
+    const stop = run("Stop");
+    assert.equal(stop.status, 0, stop.stderr);
+    assert.equal(JSON.parse(stop.stdout).systemMessage, "Memory has updated!");
+    assert.match(fs.readFileSync(log, "utf8"), /相容測試 OK <!-- aget-hook -->/);
+    fs.renameSync(vault, vault + "-saved");
+    const missing = run("Stop");
+    assert.equal(missing.status, 0, missing.stderr);
+    assert.match(JSON.parse(missing.stdout).systemMessage, /^Memory 未更新：/);
+    assert.equal(fs.existsSync(vault), false);
+    fs.renameSync(vault + "-saved", vault);
+  }
 });
 test("shadowed instructions and preexisting skill directory are not overwritten", (t) => {
   const dir = target(t);

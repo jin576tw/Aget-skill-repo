@@ -7,6 +7,8 @@ checkpoint 為 handover 模式，只能更新選定 workspace/task 的 handover�
 
 finalize 是正常工作的結案模式，不是 handover-only 模式：允許將已蒸餾內容保存到指定 knowledge／projects 頁與 sources/sources.md、更新指定 projects/*/status.md 的該任務區塊，再刪除該 handover。raw 只讀。目標全部有完成證據、在途工作確定為空才可結案；未知不等於空。沒有新增知識須保存理由，已有知識保存來源連結。不得刪減目標來湊完成。
 
+主輪 Stop hook 只可在 journal/log.md 追加及刪除 90 天前帶 `<!-- aget-hook -->` 標記的條目；手寫條目依 vault 保留規則處理。
+
 所有 Aget 寫入方共用 vault 鎖、預期 hash、路徑白名單與讀回驗證。不覆蓋其他任務；錯誤保留交接，不在退出 hook 執行結案；不自動 commit／push。鎖檔不是任務資料，程序中斷留下鎖時先確認沒有寫入者並核對資料，不能只因過期自動清鎖。
 
 跨檔案不是原子交易：中斷可保留已保存的知識；重試相同內容不重複寫入。status 或刪除失敗仍保留 handover；修復原因並重新讀取 hash 後重試。不把腳本驗證當成語意驗收，模型仍對目標及蒸餾內容負責。

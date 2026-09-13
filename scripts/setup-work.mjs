@@ -8,12 +8,12 @@ cli(() => {
     const flag = args[i];
     if (flag === "--check") p.check = true;
     else if (flag === "--hooks") p.hooks = true;
-    else if (["--target", "--platform", "--scope"].includes(flag)) {
+    else if (["--target", "--platform", "--scope", "--vault"].includes(flag)) {
       if (!args[i + 1]) fail("VALUE_REQUIRED");
       p[flag.slice(2)] = args[++i];
     } else
       fail(
-        "USAGE: setup-work.mjs [--target project] [--platform both|claude|codex] [--scope project|user] [--hooks] [--check]",
+        "USAGE: setup-work.mjs [--target project] [--platform both|claude|codex] [--scope project|user] [--hooks] [--vault absolute-vault] [--check]",
       );
   }
   return setup(p);

@@ -23,6 +23,6 @@ description: 保存或讀取跨 Agent 的任務接續，處理明確暫停、里
 
 ## hooks
 
-里程碑立即 checkpoint 最可靠。需要退出備援時使用 `node scripts/stage-checkpoint.mjs` 保存已整理的 request，宿主的暫停、等待、compact、Stop／SessionEnd 只 flush 它。沒有 pending request 就無副作用；hook 不掃 transcript、不產生語意摘要、不 finalize。clear 無法保證有足夠時間產生新摘要，所以不要只靠退出事件。
+里程碑立即 checkpoint 最可靠。需要退出備援時使用 `node scripts/stage-checkpoint.mjs` 保存已整理的 request，宿主的暫停、等待、compact、Stop／SessionEnd 只 flush 它。沒有 pending request 就不寫 handover；主輪 Stop 另在 `journal/log.md` 追加一行帶 `<!-- aget-hook -->` 的機械紀錄並顯示結果，這不是交接或結案。hook 不掃 transcript、不產生語意摘要、不 finalize。clear 無法保證有足夠時間產生新摘要，所以不要只靠退出事件。
 
 精確 JSON 欄位、鎖恢復與重試見 [runtime](../../docs/runtime.md)。不自動 commit／push，也不記錄完整 transcript、機密或業務內容到個人 vault。

@@ -11,7 +11,7 @@ node scripts/setup-work.mjs --target /absolute/project --platform both
 node scripts/setup-work.mjs --target /absolute/project --platform both --check
 ```
 
-`--platform` 可為 claude、codex、both。明確需要事件備援時加 `--hooks`；後續更新沿用啟用狀態。預設安裝範圍是指定專案；user scope 使用 `--scope user --target /absolute/user-home`，規範放到 .claude/CLAUDE.md 及 .codex/AGENTS.md，既有 Node 不合要求時先使用環境受信任的安裝方式，不自建 runtime 管理器。工具放在目標 `.aget/plugin`，skills 由 `.agents/skills/aget-*` 與 `.claude/skills/aget-*` 發現；CLAUDE.md／AGENTS.md 只更新受管理區塊。原生 plugin 安裝與 setup 的 skills 發現二擇一，避免重複安裝同一能力；本 repo 的 plugin manifests 可供宿主原生安裝。
+`--platform` 可為 claude、codex、both。明確需要事件備援時加 `--hooks`，並以 `--vault /absolute/vault` 指定每輪 journal 位置；後續更新沿用啟用狀態。預設安裝範圍是指定專案；user scope 使用 `--scope user --target /absolute/user-home`，規範放到 .claude/CLAUDE.md 及 .codex/AGENTS.md，既有 Node 不合要求時先使用環境受信任的安裝方式，不自建 runtime 管理器。工具放在目標 `.aget/plugin`，skills 由 `.agents/skills/aget-*` 與 `.claude/skills/aget-*` 發現；CLAUDE.md／AGENTS.md 只更新受管理區塊。原生 plugin 安裝與 setup 的 skills 發現二擇一，避免重複安裝同一能力；本 repo 的 plugin manifests 可供宿主原生安裝。
 
 手動修改的受管理檔案或規範區塊報衝突；區塊外內容與其他 hooks 保留。缺少的受管理檔案可修復，新版移除的檔案僅按安裝清單與 hash 移除。首次安裝不會自動刪除先前無清單的全域副本；需先核對來源及差異。設定及 hook 信任由宿主管理，安裝成功不表示既有 session 已重載。Codex AGENTS.override.md 遮蔽時拒絕寫入失效目標。
 
@@ -83,7 +83,7 @@ node scripts/enable-vault.mjs /absolute/vault
 
 里程碑立即 checkpoint 是主要保存方式。`node scripts/stage-checkpoint.mjs < checkpoint.json` 可先保存待寫 request，回傳 pending hash；變更既有 pending request 需 pendingExpectedHash。每個 session 只允許一條待 flush 任務，切換 task 前需先 flush，避免覆蓋。
 
-hook 僅 flush 已有 request，不掃描 transcript、不呼叫模型、不 finalize。即使 pending 原標 completed，延遲事件也會降為 active／未知在途，留待正常工作重新驗收。只有 compact／clear 事件但未整理 request，無法憑空產生接續內容。
+hook 僅 flush 已有 request，不掃描 transcript、不呼叫模型、不 finalize。主輪 Stop 另以 `last_assistant_message` 首段在 vault `journal/log.md` 追加一行（vault 取 `--vault`，否則 `MEMORY_VAULT`；setup 以 `--vault` 寫入 hook 指令），刪除 90 天前的 `<!-- aget-hook -->` 條目，stdout 輸出 `{"systemMessage":"Memory has updated!"}` 或「Memory 未更新：原因」。兩宿主 Stop 輸入皆含 `last_assistant_message`，systemMessage 會顯示給使用者，Codex Stop exit 0 時須輸出 JSON（2026-09-13 核對原文）。即使 pending 原標 completed，延遲事件也會降為 active／未知在途，留待正常工作重新驗收。只有 compact／clear 事件但未整理 request，無法憑空產生接續內容。
 
 | 宿主 | 設定與事件 |
 |---|---|
