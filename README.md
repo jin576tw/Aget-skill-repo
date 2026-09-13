@@ -7,6 +7,8 @@
 - 移除 10 個重複 commands 與 3 個 PowerShell 實作。
 - Node 核心：setup、plan-board、checkpoint／finalize、事件備援與 DOCX 打包；不新增 runtime 管理器、事件資料庫或評分服務。
 
+永久規範保留穩定邊界；委派或跨 session 時，以 [Execution Brief](skills/start-work/references/execution-brief.md) 提供精確任務資訊。保留 AC 追溯、專業方法與實際驗收，執行批次及模型分工依任務決定。
+
 ## 使用
 
 Node.js >=18。在本工具庫執行：

@@ -13,3 +13,11 @@
 Native Windows 執行、真實 Claude／Codex 對話的自動選用與 compact／clear／idle 全生命週期仍未執行。Windows 路徑與舊 hash 的單元案例不能代替原生平台驗證。description 提供選用線索，不能保證每次模型都選對。沒有修改或繞過使用者既有宿主信任設定。
 
 手動宿主驗收：在隔離專案執行 setup，依宿主正常信任機制啟用後開新 session；從自然開發需求核對 start-work，小需求不建立 board；研究需求核對 ask-arxiv。保存 paused checkpoint 後用另一宿主讀取並核對目標、限制及下一步；在已有 pending request 下觸發該宿主支援的 Stop／compact／結束事件，確認只 flush 一次且不結案。全部目標完成後再驗證 finalize 的來源與 status 链接。測試不可用時保留交接，不標成功。
+
+## 2026-09-13 任務契約調整
+
+本輪已在分支工作樹補上 Execution Brief、board 任務資訊、AC 追溯與案例拆分邊界，縮準 Playwright 觸發及規格／測試參考入口。設計決策與來源見 [工具盤點](tool-design-audit.md)。本輪未提交、推送或更新全域安裝。
+
+本機 `npm test` 39/39 通過、`npm run check` 與 `git diff --check` 通過；新增 board 範本以實際 workspace 與計算後的 contract hash 經 `parseBoard` 讀取成功。六個修改的 SKILL.md 已納入套件 metadata／連結檢查；官方 quick_validate 因系統及宿主 bundled Python 均缺 PyYAML 而未能執行，不能列為通過。未安裝全域依賴。
+
+以上證明套件、文件及 board 相容性，不證明不同模型收到任務包後的實際行為。Opus／Sol 控場、Sonnet／Luna 執行的情境對照，以及新版全域載入仍未驗證。本輪未建立任務 handover，亦未清除既有實作或 Windows 驗收交接。

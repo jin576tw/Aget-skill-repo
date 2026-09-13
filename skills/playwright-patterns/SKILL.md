@@ -1,6 +1,6 @@
 ---
 name: playwright-patterns
-description: Playwright E2E 測試撰寫通用指南。TRIGGER when 使用者提及 Playwright、E2E 測試、UI 測試、自動化測試、撰寫測試。提供選擇器策略、認證繞過、API mock、測試報告格式。
+description: 撰寫或診斷 Playwright 瀏覽器／E2E 測試，涵蓋選擇器、mock 與版面斷言；純單元測試不需載入。
 ---
 
 # Playwright E2E Testing Patterns

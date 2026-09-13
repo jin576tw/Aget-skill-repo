@@ -15,6 +15,6 @@ description: 撰寫及驗證 Vue（依實際 Vue 版本選相容的測試工具�
 
 ## 參考
 
-- [ac-tagging.md](ac-tagging.md)：ac-tagging 範例與技術細節，按需使用。
-- [component-patterns.md](component-patterns.md)：component-patterns 範例與技術細節，按需使用。
-- [unit-patterns.md](unit-patterns.md)：unit-patterns 範例與技術細節，按需使用。
+- [ac-tagging.md](ac-tagging.md)：需要建立或核對 AC／IT 與測試的映射、案例拆分時使用。
+- [component-patterns.md](component-patterns.md)：驗證元件渲染、事件與狀態互動時使用。
+- [unit-patterns.md](unit-patterns.md)：撰寫邏輯單元測試、準備 fixture 與隔離依賴時使用。

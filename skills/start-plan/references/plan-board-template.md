@@ -27,8 +27,12 @@
 - Contract-SHA256: <hash>
 <!-- START-PLAN:CONTRACT:IMPLEMENT:BEGIN -->
 - Objective: <goal>
-- Scope: <files and boundaries>
-- Acceptance: <observable completion evidence>
+- Scope: <repository, files or modules>
+- Non-Goals: <excluded changes and behavior to preserve>
+- Context: <approved spec/SA, code entry points and accepted decisions>
+- Acceptance: <AC and observable expected behavior>
+- Tests: <applicable verification, known commands/environment or explicit unknowns>
+- Completion Evidence: <required results, evidence locations and task Done>
 - Priority: P1
 - Depends-On: NONE
 <!-- START-PLAN:CONTRACT:IMPLEMENT:END -->
@@ -40,3 +44,5 @@
 ```
 
 舊版附帶 Execution-Mode／Session-Budget／Worker 等欄位可讀且 hash 保持，不要求新計畫加入。修改 locked contract 須有明確需求變更依據，不能藉更新狀態偷改。
+
+任務資訊按 [Execution Brief](../../start-work/references/execution-brief.md) 準備，可引用既有 spec 而不複製全文。新增欄位提供撰寫提示，不改變舊 board 的必要欄位或 hash 規則；既有 locked contract 不為套用新版範本而重寫。

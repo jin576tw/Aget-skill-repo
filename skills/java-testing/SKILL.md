@@ -15,6 +15,6 @@ description: 撰寫及驗證 Java（沿用 JUnit／Mockito／AssertJ／MockMvc �
 
 ## 參考
 
-- [ac-tagging.md](ac-tagging.md)：ac-tagging 範例與技術細節，按需使用。
-- [mockmvc-patterns.md](mockmvc-patterns.md)：mockmvc-patterns 範例與技術細節，按需使用。
-- [unit-patterns.md](unit-patterns.md)：unit-patterns 範例與技術細節，按需使用。
+- [ac-tagging.md](ac-tagging.md)：需要建立或核對 AC／IT 與測試的映射、案例拆分時使用。
+- [mockmvc-patterns.md](mockmvc-patterns.md)：驗證 Spring MVC 請求、回應與錯誤處理時使用。
+- [unit-patterns.md](unit-patterns.md)：撰寫邏輯單元測試、準備 fixture 與隔離依賴時使用。

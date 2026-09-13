@@ -2,6 +2,10 @@
 
 本版 30 skills、5 Agents，commands 為零。舊版 33／10／10。第三方 API／格式範例按需保留；技術依賴順序、來源與鎖不是多餘流程。這是能力與結構核對，不是每個第三方演算法的安全審计。
 
+本輪調整原則：永久規範精簡，任務契約精確。AC 追溯與案例拆分保留；不把它們綁成固定單一 AC 派工回合。薄 Agent 可引用共用方法，並非僅因內容少就退役。委派資訊見 [Execution Brief](../skills/start-work/references/execution-brief.md)。
+
+此調整依據：2026-09-13 使用者於本任務補充的文章討論與模型分層需求。保留的設計知識是「永久規範精簡、任務資訊精確」；文章不構成取消 AC 追溯、案例拆分或 TDD 的依據。執行與驗證狀態見 [validation](validation.md)。
+
 ## 現存 skills
 
 | 工具 | 保留責任 |
@@ -23,7 +27,7 @@
 | [llm-wiki-maintainer](../skills/llm-wiki-maintainer/SKILL.md) | 維護知識庫的穩定知識、來源及導航；用於蒸餾、整理或查詢知識，不在每次 checkpoint 重整全庫。 |
 | [md-to-pdf](../skills/md-to-pdf/SKILL.md) | 將一般 Markdown 文件轉成含中文、圖片及必要 Mermaid 圖表的 PDF。 |
 | [pdf](../skills/pdf/SKILL.md) | Use this skill whenever the user wants to do anything with PDF files. This includes reading or extracting text/tables from PDFs, combining or merging multiple PDFs into one, splitting PDFs apart, rotating pages, adding watermarks, creating new PDFs, filling PDF forms, encrypting/decrypting PDFs, extracting images, and OCR on scanned PDFs to make them searchable. If the user mentions a .pdf file or asks to produce one, use this skill. |
-| [playwright-patterns](../skills/playwright-patterns/SKILL.md) | Playwright E2E 測試撰寫通用指南。TRIGGER when 使用者提及 Playwright、E2E 測試、UI 測試、自動化測試、撰寫測試。提供選擇器策略、認證繞過、API mock、測試報告格式。 |
+| [playwright-patterns](../skills/playwright-patterns/SKILL.md) | 撰寫或診斷 Playwright 瀏覽器／E2E 測試，涵蓋選擇器、mock 與版面斷言；純單元測試不需載入。 |
 | [ppt](../skills/ppt/SKILL.md) | 從內容建立 MARP 投影片並匯出 PDF 或 PPTX；版面依讀者與使用者格式需求。 |
 | [review-checklist](../skills/review-checklist/SKILL.md) | 審查程式碼變更、規格追溯與驗收證據。用於 code review 或交付驗收；純規格撰寫或一般測試不需載入。 |
 | [setup-work](../skills/setup-work/SKILL.md) | 首次準備、更新或修復 Aget 工具、CLAUDE.md／AGENTS.md 與選用 hooks；不是日常開發啟動步驟。 |
@@ -88,6 +92,7 @@ plan-board、2 個既有 hooks 的 PowerShell 已移除；BSD 打包由 Node pac
 - `hooks/pitfall-guard.mjs`
 - `hooks/record.mjs`
 - `hooks/session-start-context.mjs`
+- `skills/start-work/references/execution-brief.md`
 - `skills/angular-conventions/component-patterns.md`
 - `skills/angular-conventions/form-value-gotchas.md`
 - `skills/angular-testing/ac-tagging.md`

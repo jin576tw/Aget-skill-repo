@@ -1,36 +1,23 @@
-# AC Tagging（Vue 2 / Nuxt 2）
+# AC Tagging（vue）
 
-每條測試必須能追蹤回 spec 的 `AC-XX`。
+## 追溯契約
 
-## 命名規則
+專案已有 AC／IT 編號時，相關測試須保留可檢索的對應，沿用專案命名或測試映射格式。沒有既定編號時，以需求或行為名稱追溯，不為套用範例建立額外編號體系。
 
-```js
-// AC-01: 輸入為空時顯示必填錯誤
-it('AC-01: should show required error when input is empty', () => {
-  ...
+```typescript
+it('AC-01: 必填欄位為空時顯示錯誤', () => {
+  // Arrange / Act / Assert：驗證 AC-01 的預期行為
 });
 ```
 
-## 規則
+範例僅展示命名，實際測試必須包含有效斷言。編號可放在測試名稱、Java DisplayName、metadata 或明確測試映射；不要求方法名與註解重複同一編號，專案已有要求則沿用。
 
-- `it(...)` 名稱必須以 `AC-XX:` 開頭
-- 測試前一行加入 `// AC-XX: ...` 單行 comment，便於 grep 追蹤
-- 一條 AC 可對應多個 `it(...)`，但每個都必須保留 `AC-XX`
-- 若同一測試涵蓋多個 AC，拆開，不混在同一個 `it(...)`
+## 案例拆分與證據
 
-## describe 結構建議
+- 不同前提或獨立預期行為宜拆成多個案例，讓失敗可定位；一條 AC 可由正常、邊界與錯誤案例共同覆蓋。
+- 同一整合旅程可涵蓋多項 AC，須標明對應及各項斷言；不能只憑旅程最後成功就宣稱全部 AC 通過。
+- 完成核對逐項對照 AC 與實際證據；未執行、失敗、被前置失敗阻擋者分別標明。
 
-```js
-describe('AC-XX: [AC 描述]', () => {
-  // Given: [前置條件說明]
-  it('AC-XX: should [happy path Then]', ...);        // 必填
-  it('AC-XX: should [boundary/null Then]', ...);     // 若 AC 有定義邊界值
-  it('AC-XX: should [error/disabled Then]', ...);    // 若 AC 的 Then 含異常狀態
-});
-```
+## 與工作批次的關係
 
-## 禁止事項
-
-- 不得使用無 `AC-XX` 前綴的測試名稱混入同一輪 TDD
-- 不得一次為所有 AC 先建立完整測試後再實作（horizontal slicing 禁止）
-- 不得用 `expect(true).toBe(true)` 或空測試體製造假綠燈
+案例拆分不限制實作批次、Agent 數量或派工順序。任務可涵蓋一條或一組相關 AC，由任務契約決定。採 TDD 時，仍須先觀察對應行為測試因功能尚未滿足而失敗，再實作並驗證；不使用固定 fail、空斷言或破壞 import 製造假紅綠燈。
