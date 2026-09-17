@@ -1,6 +1,6 @@
 # Aget Work
 
-給 Claude Code 與 Codex 使用的開發工具庫：30 個 skills、5 個 Agents、Node 腳本與選用 hooks。
+給 Claude Code 與 Codex 使用的開發工具庫：32 個 skills、5 個 Agents、Node 腳本與選用 hooks。
 
 安裝後不需要每次先執行初始化指令，也不必記指令名稱。直接用自然語言提出需求（例如「修正登入頁錯誤訊息」「幫我找這個設計的論文佐證」），模型會依 skill 的 description 自動選用；也可以手動點名。
 
@@ -126,6 +126,8 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 
 | Skill | 何時用 |
 |---|---|
+| [consult-claude](skills/consult-claude/SKILL.md) | Codex 透過本機 `claude` CLI 請 Claude 做獨立 review、第二意見、架構挑戰、除錯或辯論；Codex 驗證後決策。需要已登入的 Claude Code CLI。 |
+| [consult-codex](skills/consult-codex/SKILL.md) | Claude Code 透過本機 `codex exec` 請 Codex 做獨立 review、第二意見、架構挑戰、除錯或辯論，依任務規模路由 GPT-5.6 Luna／Terra／Sol；Claude 驗證後決策。需要已登入的 Codex CLI。 |
 | [ask-arxiv](skills/ask-arxiv/SKILL.md) | 找近期 arXiv 論文佐證或反證設計，或核對他人引用的研究數字。 |
 | [jira-get-attachments](skills/jira-get-attachments/SKILL.md) | 讀取 Jira 附件與截圖，確認實際功能入口。需要 Jira connector 或受信任的端點。 |
 | [jira-fix-comment](skills/jira-fix-comment/SKILL.md) | 依已驗證的修正整理 Jira 留言草稿。你明確授權才會張貼。 |

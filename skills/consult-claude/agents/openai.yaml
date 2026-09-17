@@ -1,0 +1,4 @@
+interface:
+  display_name: "Consult Claude"
+  short_description: "透過本機 Claude CLI 取得獨立 review、第二意見、架構挑戰或除錯分析，由 Codex 驗證並決策"
+  default_prompt: "使用 $consult-claude，請 Claude 以唯讀方式獨立審查目前的變更，並由你驗證其重要發現後給出結論。"

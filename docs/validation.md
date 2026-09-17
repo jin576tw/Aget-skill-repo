@@ -68,3 +68,18 @@ Codex 核對 Claude 回寫的完整 diff SHA256 6cd3b94e8f59fad49cd920f884fc5e12
 
 setup 更新移除舊檔後，逐層刪除變空的 `.aget/plugin` 子目錄，不越過 plugin 根目錄、不刪含其他檔案的目錄；rollback 還原檔案時重建目錄。新增測試先在修正前失敗（被移除 skill 的目錄仍存在），修正後通過。`npm test` 50/50（npm 使用 Node 20.5.0）、`npm run check` 通過。
 
+
+## consult-claude（2026-09-17）
+
+- `check-package` 31 skills 通過，`npm test` fail 0；setup-work user scope 回傳 `SETUP_COMPLETE`（31 skills），`~/.agents/skills` 與 `~/.claude/skills` 均有 `aget-consult-claude`。
+- Codex 0.154.0 正向情境「請 Claude review add.js」：自動選用 skill，先跑 `claude --version`，以 quoted heredoc 暫存檔 stdin 呼叫 `claude -p --model opus --effort high --tools 'Read,Glob,Grep'`；CLI 回傳未登入時保留 exit 與 stderr 回報，未冒充 Claude 意見，Codex 自行檢查另行標示，檔案未修改。
+- 反向情境「修正 add.js 的加法 bug」：未呼叫 Claude，直接修正並驗證。
+- 未驗證：本機 Claude CLI OAuth 過期，Claude 實際回覆、唯讀工具限制下的拒絕改檔、debate 兩輪上限與 implementation mode 尚未實測。
+
+## consult-codex（2026-09-17）
+
+- `npm run check` 32 skills 通過、`npm test` 50/50 fail 0。
+- 直接以 skill 記載的指令實測（scratchpad 的 `add.js`，故意寫成 `a - b`）：Luna `medium`、Terra `high` 均 exit 0 並正確指出減法 bug；三個模型都用 `-s read-only --ephemeral -C <dir> -o <file>` + stdin heredoc。
+- 唯讀驗證：Sol `high` 收到「直接改檔」指令時回報 workspace 為 read-only，`add.js` 的 shasum 前後一致，檔案未被修改。
+- 失敗處理驗證：`-m gpt-5.6-nonexist` exit 1，log 保留 `invalid_request_error ... model is not supported`，可據此回報而非 fallback。
+- 未驗證：debate 兩輪上限、implementation mode（`-s workspace-write`）、Claude Code 自然語言自動路由的正反情境抽樣。
