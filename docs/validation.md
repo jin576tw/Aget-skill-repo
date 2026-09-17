@@ -74,7 +74,10 @@ setup 更新移除舊檔後，逐層刪除變空的 `.aget/plugin` 子目錄，�
 - `check-package` 31 skills 通過，`npm test` fail 0；setup-work user scope 回傳 `SETUP_COMPLETE`（31 skills），`~/.agents/skills` 與 `~/.claude/skills` 均有 `aget-consult-claude`。
 - Codex 0.154.0 正向情境「請 Claude review add.js」：自動選用 skill，先跑 `claude --version`，以 quoted heredoc 暫存檔 stdin 呼叫 `claude -p --model opus --effort high --tools 'Read,Glob,Grep'`；CLI 回傳未登入時保留 exit 與 stderr 回報，未冒充 Claude 意見，Codex 自行檢查另行標示，檔案未修改。
 - 反向情境「修正 add.js 的加法 bug」：未呼叫 Claude，直接修正並驗證。
-- 未驗證：本機 Claude CLI OAuth 過期，Claude 實際回覆、唯讀工具限制下的拒絕改檔、debate 兩輪上限與 implementation mode 尚未實測。
+- 登入後直接呼叫 `claude -p --model sonnet --tools "Read,Glob,Grep"`（prompt 含 `$HOME`、引號、`;`、`|`、`&&`）成功回覆：Claude 明確回報自己沒有 Edit/Write 與 Bash，無法改檔、無法執行 `codex --version`，檔案內容確認未變更——唯讀與防遞迴以工具白名單落地。
+- 登入後 Codex 端到端正向情境：`claude -p --model opus --effort high --tools 'Read,Glob,Grep'` 回傳完整 review，Codex 自行實測 `add(2,3) = -1` 後採納並將 Claude 的 Critical 調整為 P1，輸出區分 Claude 意見與 Codex 判斷，未修改檔案。
+- **限制**：`codex exec -s workspace-write` 的沙箱下 `claude` 讀不到憑證，會回 `Not logged in`；實測需 `-s danger-full-access`（或在未沙箱的一般 Codex session）才能呼叫成功。
+- 未驗證：debate 兩輪上限與 implementation mode 尚未實測。
 
 ## consult-codex（2026-09-17）
 
