@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 export const sha = (value) => createHash("sha256").update(value).digest("hex");
 export const fail = (code) => {
@@ -51,20 +52,82 @@ export function atomic(file, text, expected) {
     fs.rmSync(temp, { force: true });
   }
 }
-export function locked(root, fn) {
-  const lock = safe(root, ".aget-write.lock");
-  let fd;
+// Stop hooks append one mechanical journal line. Replacing the whole journal
+// here would make a harmless hook depend on remote-file read/hash/write time.
+export function append(file, text) {
+  if (typeof text !== "string" || !text.length) fail("EMPTY_APPEND");
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const bytes = Buffer.from(text, "utf8");
+  const fd = fs.openSync(file, "a+", 0o600);
   try {
-    fd = fs.openSync(lock, "wx", 0o600);
-  } catch (e) {
-    if (e.code === "EEXIST") fail("WRITE_LOCKED");
-    throw e;
-  }
-  try {
-    return fn();
+    const start = fs.fstatSync(fd).size;
+    let offset = 0;
+    while (offset < bytes.length)
+      offset += fs.writeSync(fd, bytes, offset, bytes.length - offset);
+    fs.fsyncSync(fd);
+    const actual = Buffer.alloc(bytes.length);
+    let readBytes = 0;
+    while (readBytes < actual.length) {
+      const count = fs.readSync(fd, actual, readBytes, actual.length - readBytes, start + readBytes);
+      if (!count) fail("READBACK_FAILED");
+      readBytes += count;
+    }
+    if (!actual.equals(bytes)) fail("READBACK_FAILED");
   } finally {
     fs.closeSync(fd);
-    fs.unlinkSync(lock);
+  }
+}
+
+const lockName = ".aget-write.lock";
+const lockPrefix = lockName + "-";
+const lockPattern = /^\.aget-write\.lock-([0-9a-z]+)-(\d+)-[0-9a-f-]+$/;
+function legacyLock(root) {
+  const file = safe(root, lockName);
+  try { fs.lstatSync(file); return file; } catch (e) { if (e.code === "ENOENT") return null; throw e; }
+}
+function pidIsAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch (e) { return e.code !== "ESRCH"; }
+}
+function processStartedBefore(pid, acquiredAt) {
+  if (process.platform !== "win32") return true;
+  const command = "(Get-Process -Id " + pid + " -ErrorAction SilentlyContinue).StartTime.ToUniversalTime().ToString('o')";
+  const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", command], { encoding: "utf8", timeout: 2000, windowsHide: true });
+  if (result.error || result.status !== 0) return true;
+  const started = Date.parse(result.stdout.trim());
+  return Number.isNaN(started) || started <= acquiredAt;
+}
+function lockCandidates(root) {
+  return fs.readdirSync(root).filter((name) => name.startsWith(lockPrefix)).sort().map((name) => {
+    const match = name.match(lockPattern);
+    if (!match) fail("WRITE_LOCKED");
+    const file = safe(root, name);
+    const stat = fs.lstatSync(file);
+    if (!stat.isDirectory()) fail("WRITE_LOCKED");
+    return { name, file, pid: Number(match[2]), acquiredAt: Number.parseInt(match[1], 36) };
+  });
+}
+function recoverDeadLocks(root) {
+  for (const candidate of lockCandidates(root)) {
+    if (!Number.isSafeInteger(candidate.pid) || !Number.isSafeInteger(candidate.acquiredAt) || (pidIsAlive(candidate.pid) && processStartedBefore(candidate.pid, candidate.acquiredAt))) continue;
+    // Recovery requires a dead/reused owner PID. This is not a time lease.
+    fs.rmSync(candidate.file, { recursive: true, force: false });
+  }
+}
+export function locked(root, fn) {
+  root = fs.realpathSync(root);
+  // Preserve an existing legacy lock exactly as-is; it has no owner identity.
+  if (legacyLock(root)) fail("WRITE_LOCKED");
+  recoverDeadLocks(root);
+  const stamp = Date.now().toString(36).padStart(10, "0");
+  const name = lockPrefix + stamp + "-" + process.pid + "-" + randomUUID();
+  const lock = safe(root, name);
+  try { fs.mkdirSync(lock, { mode: 0o700 }); } catch (e) { if (e.code === "EEXIST") fail("WRITE_LOCKED"); throw e; }
+  try {
+    // Directory names sort by acquisition order, so exactly one contender wins.
+    if (legacyLock(root) || lockCandidates(root)[0]?.name !== name) fail("WRITE_LOCKED");
+    return fn();
+  } finally {
+    fs.rmSync(lock, { recursive: true, force: true });
   }
 }
 export function workspaceInfo(value, legacy = false) {

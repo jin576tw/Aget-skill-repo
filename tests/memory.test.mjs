@@ -312,7 +312,7 @@ function hook(input, env = {}, args = []) {
 const noVault =
   JSON.stringify({ systemMessage: "Memory 未更新：VAULT_NOT_CONFIGURED" }) + "\n";
 const updated = JSON.stringify({ systemMessage: "Memory has updated!" }) + "\n";
-test("Stop appends one hook journal entry and prunes only expired hook entries", (t) => {
+test("Stop appends one bounded hook entry without rewriting prior journal bytes", (t) => {
   const { p } = fixture(t);
   const log = path.join(p.vault, "journal/log.md");
   fs.mkdirSync(path.dirname(log));
@@ -331,16 +331,14 @@ test("Stop appends one hook journal entry and prunes only expired hook entries",
   );
   assert.equal(out.status, 0, out.stderr);
   assert.equal(out.stdout, updated);
-  const lines = fs.readFileSync(log, "utf8").split("\n");
-  assert.equal(lines[0], "# Log");
+  const text = fs.readFileSync(log, "utf8");
+  assert.ok(text.startsWith(`# Log\n\n${hookOld}\n\n${manualOld}\n`));
+  const lines = text.split("\n");
   assert.match(
-    lines[2],
+    lines.at(-2),
     /^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}\]\[work\] 完成第一行 第二行字+ <!-- aget-hook -->$/,
   );
-  assert.ok(lines[2].length < 280);
-  const text = lines.join("\n");
-  assert.ok(!text.includes("過期 hook 條目"));
-  assert.ok(text.includes(manualOld));
+  assert.ok(lines.at(-2).length < 280);
 });
 test("--vault overrides MEMORY_VAULT and a missing vault is reported without writing", (t) => {
   const { p, dir } = fixture(t);
@@ -357,24 +355,24 @@ test("--vault overrides MEMORY_VAULT and a missing vault is reported without wri
     /^# Log\n\n\[.+\]\[work\] .+ <!-- aget-hook -->\n$/,
   );
 });
-test("Stop preserves retained journal bytes and handles a header without newline", (t) => {
+test("Stop preserves all prior journal bytes and handles a missing final newline", (t) => {
   const { p } = fixture(t);
   const log = path.join(p.vault, "journal/log.md");
   fs.mkdirSync(path.dirname(log));
   for (const eol of ["\n", "\r\n"]) {
     const manual = `${eol}手寫 A${eol}${eol}${eol}手寫 B${eol}`;
     const expired = `[2000-01-01T00:00:00+08:00][work] old <!-- aget-hook -->${eol}`;
-    fs.writeFileSync(log, `# Log${eol}${expired}${manual}`);
+    const original = `# Log${eol}${expired}${manual}`;
+    fs.writeFileSync(log, original);
     const out = hook({ hook_event_name: "Stop", session_id: p.session, cwd: p.workspace }, {}, ["--vault", p.vault]);
     assert.equal(out.stdout, updated);
     const text = fs.readFileSync(log, "utf8");
-    const end = text.indexOf("<!-- aget-hook -->") + "<!-- aget-hook -->".length;
-    assert.equal(text.slice(end), eol + manual);
-    assert.ok(text.startsWith(`# Log${eol}${eol}[`));
+    assert.ok(text.startsWith(original));
+    assert.match(text.slice(original.length), /^\[.+\]\[work\] .+ <!-- aget-hook -->\n$/);
   }
   fs.writeFileSync(log, "# Log");
   assert.equal(hook({ hook_event_name: "Stop", session_id: p.session, cwd: p.workspace }, {}, ["--vault", p.vault]).stdout, updated);
-  assert.match(fs.readFileSync(log, "utf8"), /^# Log\n\n\[/);
+  assert.match(fs.readFileSync(log, "utf8"), /^# Log\n\[/);
 });
 test("--plugin stays silent without a vault and yields the journal to a setup installation", (t) => {
   const { p, dir } = fixture(t);

@@ -93,3 +93,7 @@ Windows 11、Node 22.22.3、Claude Code 2.1.270 上以 user scope 安裝 Claude�
 首次原生執行暴露四項測試本身的 Windows 相容性缺口：無管理員權限的 directory symlink、全域 user-scope hook 對位於使用者 temp 下 fixture 的合理接管、以 `/` 判斷目標路徑、以及 `file://` Windows pathname／shell 引號差異。測試已改用 Windows junction、磁碟根目錄隔離 fixture、`path.resolve`／`fileURLToPath` 與依平台命令斷言。大型 PDF／XLSX fixture 清理另避開使用者 temp 並保留有界重試，以處理防毒或索引服務短暫持有目錄 handle；修正後全套通過。
 
 此結果證明 Windows 原生 setup、checkpoint／finalize、hook command、rollback、更新清理與套件結構。仍需新開真實 Claude／Codex session，才能證明宿主重新載入後的自然語言路由與實際 Stop／compact／SessionEnd 事件。
+
+## 2026-09-18 本機增量合併
+
+全域安裝中有四個尚未回存 repo 的受管理檔：具 owner 身分與死程序回收的 vault lock、Stop journal append-only 寫入、stdin 1.5 秒／1 MiB 上限，以及 Claude hook 15 秒 timeout。已合併回來源；hook 不再於每輪 Stop 讀取並重寫整份遠端 journal，90 天清理改由非 hook 的知識庫維護流程負責。focused memory tests 27/27 通過；完整套件需在此增量 commit 的乾淨 worktree 再驗證後才發布。

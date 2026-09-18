@@ -240,7 +240,7 @@ export function setup(p) {
               {
                 type: "command",
                 command: cmd,
-                timeout: host === "codex" ? 3 : 5,
+                timeout: host === "codex" ? 3 : 15,
               },
             ],
           });
