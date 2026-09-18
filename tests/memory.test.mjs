@@ -16,7 +16,13 @@ const root = path.resolve(
   "..",
 );
 function fixture(t) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aget-memory-"));
+  // Windows' default temp directory is inside the real user home. A global
+  // user-scope installation above it would then legitimately claim journal
+  // ownership and make these isolated hook tests depend on machine state.
+  const tempRoot = process.platform === "win32"
+    ? path.parse(os.tmpdir()).root
+    : os.tmpdir();
+  const dir = fs.mkdtempSync(path.join(tempRoot, "aget-memory-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const vault = path.join(dir, "vault"),
     workspace = path.join(dir, "work");
@@ -230,7 +236,11 @@ test("unsafe paths, symlink knowledge and raw mutations rejected", (t) => {
     );
   const outside = path.join(p.workspace, "outside");
   fs.mkdirSync(outside);
-  fs.symlinkSync(outside, path.join(p.vault, "knowledge/link"), "dir");
+  fs.symlinkSync(
+    outside,
+    path.join(p.vault, "knowledge/link"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
   assert.throws(
     () =>
       finalize({
@@ -283,10 +293,20 @@ test("legacy migration explicit and hash-protected; board cannot be overwritten"
 // Per-turn journal hook: MEMORY_VAULT is always scrubbed so tests never touch a real vault.
 function hook(input, env = {}, args = []) {
   const { MEMORY_VAULT, ...base } = process.env;
+  const isolatedHome = env.HOME ?? path.join(os.tmpdir(), "aget-empty-home");
   return spawnSync(
     process.execPath,
     [path.join(root, "hooks/record.mjs"), ...args],
-    { input: JSON.stringify(input), encoding: "utf8", env: { ...base, ...env } },
+    {
+      input: JSON.stringify(input),
+      encoding: "utf8",
+      env: {
+        ...base,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+        ...env,
+      },
+    },
   );
 }
 const noVault =
@@ -497,10 +517,11 @@ for (const stage of ["knowledge", "status", "delete"])
     else
       fs.renameSync = (from, to, ...args) => {
         if (
-          to.endsWith(
+          path.resolve(to) === path.resolve(
+            p.vault,
             stage === "knowledge"
-              ? "/knowledge/method.md"
-              : "/projects/demo/status.md",
+              ? "knowledge/method.md"
+              : "projects/demo/status.md",
           )
         )
           throw Error("INJECTED_WRITE");
@@ -533,7 +554,8 @@ test("concurrent handover change during durable write prevents deletion", (t) =>
     rename = fs.renameSync;
   fs.renameSync = (from, to, ...args) => {
     const result = rename(from, to, ...args);
-    if (to.endsWith("/status.md")) fs.appendFileSync(file, "\nother writer");
+    if (path.basename(to) === "status.md")
+      fs.appendFileSync(file, "\nother writer");
     return result;
   };
   try {

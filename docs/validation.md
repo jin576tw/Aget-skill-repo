@@ -68,7 +68,6 @@ Codex 核對 Claude 回寫的完整 diff SHA256 6cd3b94e8f59fad49cd920f884fc5e12
 
 setup 更新移除舊檔後，逐層刪除變空的 `.aget/plugin` 子目錄，不越過 plugin 根目錄、不刪含其他檔案的目錄；rollback 還原檔案時重建目錄。新增測試先在修正前失敗（被移除 skill 的目錄仍存在），修正後通過。`npm test` 50/50（npm 使用 Node 20.5.0）、`npm run check` 通過。
 
-
 ## consult-claude（2026-09-17）
 
 - `check-package` 31 skills 通過，`npm test` fail 0；setup-work user scope 回傳 `SETUP_COMPLETE`（31 skills），`~/.agents/skills` 與 `~/.claude/skills` 均有 `aget-consult-claude`。
@@ -86,3 +85,11 @@ setup 更新移除舊檔後，逐層刪除變空的 `.aget/plugin` 子目錄，�
 - 唯讀驗證：Sol `high` 收到「直接改檔」指令時回報 workspace 為 read-only，`add.js` 的 shasum 前後一致，檔案未被修改。
 - 失敗處理驗證：`-m gpt-5.6-nonexist` exit 1，log 保留 `invalid_request_error ... model is not supported`，可據此回報而非 fallback。
 - 未驗證：debate 兩輪上限、implementation mode（`-s workspace-write`）、Claude Code 自然語言自動路由的正反情境抽樣。
+
+## 2026-09-14 Native Windows 安裝與回歸
+
+Windows 11、Node 22.22.3、Claude Code 2.1.270 上以 user scope 安裝 Claude＋Codex、hooks 與 `P:\\MEMORY` vault，回傳 `SETUP_COMPLETE`（30 skills）。`npm test` 50/50、`npm run check` 通過。
+
+首次原生執行暴露四項測試本身的 Windows 相容性缺口：無管理員權限的 directory symlink、全域 user-scope hook 對位於使用者 temp 下 fixture 的合理接管、以 `/` 判斷目標路徑、以及 `file://` Windows pathname／shell 引號差異。測試已改用 Windows junction、磁碟根目錄隔離 fixture、`path.resolve`／`fileURLToPath` 與依平台命令斷言。大型 PDF／XLSX fixture 清理另避開使用者 temp 並保留有界重試，以處理防毒或索引服務短暫持有目錄 handle；修正後全套通過。
+
+此結果證明 Windows 原生 setup、checkpoint／finalize、hook command、rollback、更新清理與套件結構。仍需新開真實 Claude／Codex session，才能證明宿主重新載入後的自然語言路由與實際 Stop／compact／SessionEnd 事件。

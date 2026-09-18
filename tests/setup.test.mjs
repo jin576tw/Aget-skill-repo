@@ -4,10 +4,23 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { setup } from "../scripts/lib/setup.mjs";
 function target(t) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aget-setup-"));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const tempRoot = process.platform === "win32"
+    ? path.parse(os.tmpdir()).root
+    : os.tmpdir();
+  const dir = fs.mkdtempSync(path.join(tempRoot, "aget-setup-"));
+  t.after(() =>
+    fs.rmSync(dir, {
+      recursive: true,
+      force: true,
+      // Antivirus/indexing can briefly retain handles after copying the large
+      // document-skill trees or running a hook through cmd.exe.
+      maxRetries: process.platform === "win32" ? 20 : 0,
+      retryDelay: 250,
+    }),
+  );
   return dir;
 }
 test("setup preserves user rules, installs tools, repeat check current", (t) => {
@@ -62,7 +75,13 @@ test("hook vault argument is added once and kept on later setup", (t) => {
   setup({ target: dir });
   const codex = JSON.parse(fs.readFileSync(path.join(dir, ".codex/hooks.json")));
   assert.equal(codex.hooks.Stop.length, 1);
-  assert.match(codex.hooks.Stop[0].hooks[0].command, / '--vault' '\/v a'"'"'ult'$/);
+  const command = codex.hooks.Stop[0].hooks[0].command;
+  assert.match(
+    command,
+    process.platform === "win32"
+      ? / "--vault" "\/v a'ult"$/
+      : / '--vault' '\/v a'"'"'ult'$/,
+  );
 });
 test("both installed host commands write Stop journals and ignore SubagentStop", (t) => {
   const dir = target(t);
@@ -147,7 +166,7 @@ test("installation failure rolls back written files", (t) => {
     rename = fs.renameSync;
   fs.writeFileSync(path.join(dir, "AGENTS.md"), "original");
   fs.renameSync = (from, to, ...args) => {
-    if (to.endsWith("/AGENTS.md")) throw Error("INJECTED");
+    if (path.basename(to) === "AGENTS.md") throw Error("INJECTED");
     return rename(from, to, ...args);
   };
   try {
@@ -219,7 +238,11 @@ test("update prunes directories emptied by removed files but keeps stray files",
   const dir = target(t);
   const source = target(t);
   for (const d of ["skills", "agents", "rules"])
-    fs.cpSync(path.join(path.dirname(new URL(import.meta.url).pathname), "..", d), path.join(source, d), { recursive: true });
+    fs.cpSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), "..", d),
+      path.join(source, d),
+      { recursive: true },
+    );
   fs.mkdirSync(path.join(source, "skills/old-a/refs"), { recursive: true });
   fs.mkdirSync(path.join(source, "skills/old-b"), { recursive: true });
   for (const f of ["old-a/SKILL.md", "old-a/refs/x.md", "old-b/SKILL.md"])

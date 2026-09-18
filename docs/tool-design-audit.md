@@ -4,6 +4,8 @@
 
 本輪調整原則：永久規範精簡，任務契約精確。AC 追溯與案例拆分保留；不把它們綁成固定單一 AC 派工回合。薄 Agent 可引用共用方法，並非僅因內容少就退役。委派資訊見 [Execution Brief](../skills/start-work/references/execution-brief.md)。
 
+2026-09-18 重新依三個問題核對全部 32 skills 與 5 Agents：是否重複宿主本來就會做的事、是否清楚限制觸發／寫入／外部動作邊界、是否把完成連到可觀察證據。結論是既有合併與移除仍成立，沒有再新增一個只負責 preflight、goal 或 gate 的薄工具；驗證責任維持在 `verify`、`start-work` 與各格式／測試 skill。新增的 `consult-claude`／`consult-codex` 有明確的非例行觸發、預設唯讀、最多兩輪 debate、失敗不冒充 fallback，以及由宿主重新驗證的重要主張，因此保留為跨宿主能力，不再拆分 model-router、prompt-builder 或 result-verifier。全域設定只由 `setup-work` 管理，專案 skill 不自行改全域設定。
+
 此調整依據：2026-09-13 使用者於本任務補充的文章討論與模型分層需求。保留的設計知識是「永久規範精簡、任務資訊精確」；文章不構成取消 AC 追溯、案例拆分或 TDD 的依據。執行與驗證狀態見 [validation](validation.md)。
 
 ## 現存 skills
@@ -14,6 +16,8 @@
 | [angular-testing](../skills/angular-testing/SKILL.md) | 撰寫及驗證 Angular（沿用專案 Jasmine／TestBed 或其他既有 runner） 的單元／元件或 API 測試，按需求建立行為證據。 |
 | [ask-arxiv](../skills/ask-arxiv/SKILL.md) | 查詢近期 arXiv 原始論文，為設計或技術選擇尋找研究支持、反證與可實作方法，或核對論文及他人引用的研究說法。適用於 /ask-arxiv、$ask-arxiv、「找論文支持」「核對研究數字」「有沒有近期實驗證據」等需求；一般除錯、API 用法或純概念解說不自動啟動文獻研究。 |
 | [bsd-report](../skills/bsd-report/SKILL.md) | 依指定格式與截圖產生 BSD 測報 Word 文件，適用需要該報告樣式的交付。 |
+| [consult-claude](../skills/consult-claude/SKILL.md) | Codex 明確需要 Claude 的獨立意見時才呼叫；預設唯讀，外部結果須由 Codex 驗證，失敗不冒充 Claude 回覆。 |
+| [consult-codex](../skills/consult-codex/SKILL.md) | Claude Code 明確需要 Codex 的獨立意見時才呼叫；按風險選最小可靠模型，預設唯讀，外部結果須由 Claude 驗證。 |
 | [docx](../skills/docx/SKILL.md) | "Use this skill whenever the user wants to create, read, edit, or manipulate Word documents (.docx files). Triggers include: any mention of 'Word doc', 'word document', '.docx', or requests to produce professional documents with formatting like tables of contents, headings, page numbers, or letterheads. Also use when extracting or reorganizing content from .docx files, inserting or replacing images in documents, performing find-and-replace in Word files, working with tracked changes or comments, or converting content into a polished Word document. If the user asks for a 'report', 'memo', 'letter', 'template', or similar deliverable as a Word or .docx file, use this skill. Do NOT use for PDFs, spreadsheets, Google Docs, or general coding tasks unrelated to document generation." |
 | [error-first-debug](../skills/error-first-debug/SKILL.md) | 診斷 bug、例外、錯誤資料或效能異常，以實際證據辨識根因與修正效果。純新功能開發或規格撰寫不需載入。 |
 | [find-skills](../skills/find-skills/SKILL.md) | 當目前任務確實缺乏所需專業能力時，查找可用 skill 或 plugin 並核對其適用性。 |
