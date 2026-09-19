@@ -38,6 +38,7 @@ function replace(text, label, value) {
 }
 const wrap = (label, body) =>
   `<!-- aget:${label}:begin -->\n${body.trim()}\n<!-- aget:${label}:end -->`;
+const normalizeNewlines = (text) => text.replace(/\r\n?/g, "\n");
 function hashFile(file) {
   try {
     return sha(fs.readFileSync(file));
@@ -139,10 +140,14 @@ export function setup(p) {
     for (const rel of names) {
       const file = safe(root, rel),
         text = read(file) || "",
-        old = segment(text, "work");
-      if (old && sha(old) !== previous.blocks?.[rel])
+        old = segment(text, "work"),
+        value = wrap("work", ruleBody);
+      if (
+        old &&
+        sha(old) !== previous.blocks?.[rel] &&
+        normalizeNewlines(old) !== normalizeNewlines(value)
+      )
         fail("RULE_BLOCK_CONFLICT");
-      const value = wrap("work", ruleBody);
       blocks[rel] = sha(value);
       const data = Buffer.from(replace(text, "work", value));
       planned.push({ rel, file, data, expected: hashFile(file) });

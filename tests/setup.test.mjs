@@ -195,6 +195,22 @@ test("missing installed file repaired and edited managed rules rejected", (t) =>
   );
   assert.throws(() => setup({ target: dir }), /RULE_BLOCK_CONFLICT/);
 });
+test("managed rule line-ending drift is reconciled without weakening edit protection", (t) => {
+  const dir = target(t);
+  setup({ target: dir });
+  const rules = path.join(dir, "AGENTS.md");
+  const text = fs.readFileSync(rules, "utf8");
+  const start = text.indexOf("<!-- aget:work:begin -->");
+  const end = text.indexOf("<!-- aget:work:end -->") +
+    "<!-- aget:work:end -->".length;
+  const block = text.slice(start, end);
+  fs.writeFileSync(
+    rules,
+    text.slice(0, start) + block.replace(/\r\n?/g, "\n").replaceAll("\n", "\r\n") + text.slice(end),
+  );
+  assert.equal(setup({ target: dir }).signal, "SETUP_COMPLETE");
+  assert.equal(setup({ target: dir, check: true }).signal, "SETUP_CURRENT");
+});
 test("user scope writes native instruction locations instead of home root", (t) => {
   const dir = target(t);
   setup({ target: dir, scope: "user" });
