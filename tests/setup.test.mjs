@@ -46,6 +46,15 @@ test("manual managed file or rule edits conflict and remain untouched", (t) => {
   assert.throws(() => setup({ target: dir }), /CONFLICT/);
   assert.match(fs.readFileSync(file, "utf8"), /user edit/);
 });
+test("managed text file line-ending drift is reconciled", (t) => {
+  const dir = target(t);
+  setup({ target: dir });
+  const file = path.join(dir, ".aget/plugin/scripts/memory.mjs");
+  const text = fs.readFileSync(file, "utf8").replace(/\r\n?/g, "\n");
+  fs.writeFileSync(file, text.replaceAll("\n", "\r\n"));
+  assert.equal(setup({ target: dir }).signal, "SETUP_COMPLETE");
+  assert.equal(setup({ target: dir, check: true }).signal, "SETUP_CURRENT");
+});
 test("hooks are host-specific, repeated setup preserves unrelated hooks", (t) => {
   const dir = target(t);
   fs.mkdirSync(path.join(dir, ".claude"));

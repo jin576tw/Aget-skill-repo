@@ -39,6 +39,7 @@ function replace(text, label, value) {
 const wrap = (label, body) =>
   `<!-- aget:${label}:begin -->\n${body.trim()}\n<!-- aget:${label}:end -->`;
 const normalizeNewlines = (text) => text.replace(/\r\n?/g, "\n");
+const textFile = (rel) => /\.(?:json|md|mjs|ps1)$/i.test(rel);
 function hashFile(file) {
   try {
     return sha(fs.readFileSync(file));
@@ -89,7 +90,12 @@ export function setup(p) {
       if (
         current !== "MISSING" &&
         current !== previous.files?.[rel] &&
-        current !== sha(data)
+        current !== sha(data) &&
+        !(
+          textFile(rel) &&
+          normalizeNewlines(read(file)) ===
+            normalizeNewlines(Buffer.from(data).toString("utf8"))
+        )
       )
         fail("INSTALL_CONFLICT: " + rel);
       planned.push({ rel, file, data, expected: current });
