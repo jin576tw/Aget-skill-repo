@@ -1,6 +1,6 @@
 # Aget Work
 
-給 Claude Code 與 Codex 使用的開發工具庫：32 個 skills、5 個 Agents、Node 腳本與選用 hooks。
+給 Claude Code 與 Codex 使用的開發工具庫：34 個 skills、5 個 Agents、Node 腳本與選用 hooks。
 
 安裝後不需要每次先執行初始化指令，也不必記指令名稱。直接用自然語言提出需求（例如「修正登入頁錯誤訊息」「幫我找這個設計的論文佐證」），模型會依 skill 的 description 自動選用；也可以手動點名。
 
@@ -88,6 +88,8 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 |---|---|
 | [start-work](skills/start-work/SKILL.md) | 開發需求、bug 修正、接續既有實作。日常開發的主要入口：判斷規劃、技術能力與驗收方式。 |
 | [start-plan](skills/start-plan/SKILL.md) | 需求跨多個 session、有共享依賴或多項交付時，建立或接續 plan-board。小任務不需要。 |
+| [plan-coord](skills/plan-coord/SKILL.md) | 你指派某個 session 擔任多 session plan board 的 COORD（場控）時：認領、依賴、共用資源、分波派工與獨立驗收。 |
+| [plan-conflict-discussion](skills/plan-conflict-discussion/SKILL.md) | plan board 任務遇到跨任務衝突、契約與現況不符或多個合理方案時，回報場控並取得第二意見與裁定。 |
 | [handover](skills/handover/SKILL.md) | 暫停或到達里程碑時保存 checkpoint；全部完成後 finalize，蒸餾知識並清除交接。 |
 | [tdd](skills/tdd/SKILL.md) | 你要求 test-first，或專案本身採用 TDD 時。 |
 | [verify](skills/verify/SKILL.md) | 實際執行變更，觀察行為是否符合需求。 |
