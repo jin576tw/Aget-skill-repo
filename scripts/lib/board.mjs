@@ -104,6 +104,18 @@ export function parseBoard(input, workspace) {
       .filter((s) => s && s !== "NONE");
     r.priority = field(r.contract.body, "Priority", true) || "P1";
     if (!["P0", "P1", "P2"].includes(r.priority)) fail("INVALID_PRIORITY");
+    // Optional wave fields: missing means unknown, so the task never enters a wave automatically.
+    const resources = field(r.contract.body, "Resources", true);
+    r.resources =
+      resources === null
+        ? null
+        : /^none$/i.test(resources)
+          ? []
+          : resources
+              .split(",")
+              .map((s) => s.trim().replace(/^`|`$/g, ""))
+              .filter(Boolean);
+    r.signOff = field(r.contract.body, "Sign-off", true);
   }
   const visit = (r, trail = new Set()) => {
     if (trail.has(r.task)) fail("DEPENDENCY_CYCLE");
@@ -122,6 +134,42 @@ export function parseBoard(input, workspace) {
   )
     fail("PLAN_STATUS_MISMATCH");
   return { text, plan, revision, status, rows };
+}
+// Mechanical wave candidates only; COORD still judges checkpoints, isolation and evidence.
+function waves(rows, eligible) {
+  const occupied = new Map();
+  const excluded = [];
+  for (const r of rows.filter((x) => x.status === "in_progress")) {
+    if (r.resources === null)
+      return {
+        candidates: [],
+        excluded: eligible
+          .filter((x) => x.status === "ready")
+          .map((x) => ({
+            task: x.task,
+            reason: "in_progress_resources_unknown:" + r.task,
+          })),
+      };
+    for (const res of r.resources) occupied.set(res, r.task);
+  }
+  const candidates = [];
+  for (const r of eligible) {
+    let reason = null;
+    if (r.status !== "ready") reason = "status:" + r.status;
+    else if (!/^none$/i.test(r.signOff || ""))
+      reason = "sign_off:" + (r.signOff || "unknown");
+    else if (r.resources === null) reason = "resources_unknown";
+    else {
+      const hit = r.resources.find((res) => occupied.has(res));
+      if (hit) reason = "resource_conflict:" + hit + "@" + occupied.get(hit);
+    }
+    if (reason) excluded.push({ task: r.task, reason });
+    else {
+      candidates.push(r.task);
+      for (const res of r.resources) occupied.set(res, r.task);
+    }
+  }
+  return { candidates, excluded };
 }
 export function board(p) {
   const workspace = p.workspace || process.cwd();
@@ -177,7 +225,8 @@ export function board(p) {
           ),
       )
       .sort((a, b) => a.priority.localeCompare(b.priority));
-    if (["status", "validate", "resolve"].includes(action))
+    if (["status", "validate", "resolve"].includes(action)) {
+      const wave = waves(b.rows, eligible);
       return {
         signal:
           action === "validate"
@@ -194,7 +243,13 @@ export function board(p) {
         next_tasks: eligible
           .filter((r) => r.priority === eligible[0]?.priority)
           .map((r) => `${b.plan}:${r.task}`),
+        wave_candidates: wave.candidates.map((t) => `${b.plan}:${t}`),
+        wave_excluded: wave.excluded.map((x) => ({
+          ...x,
+          task: `${b.plan}:${x.task}`,
+        })),
       };
+    }
     if (action !== "update") fail("UNSUPPORTED_ACTION");
     if (sha(original) !== p.expectedHash) fail("PLAN_CONCURRENT_UPDATE");
     const r = b.rows.find((r) => r.task === task);
@@ -231,9 +286,18 @@ export function board(p) {
       .replace(/^- Claim-ID:.*$/m, `- Claim-ID: ${claim}`)
       .replace(/^- Task-Revision:.*$/m, `- Task-Revision: ${r.revision + 1}`);
     const progress = block(changed, "PROGRESS", task);
+    // Keep earlier progress as one-line history entries so evidence is never overwritten.
+    const lines = progress.body.split("\n").filter((l) => l.trim());
+    const at = lines.findIndex((l) => /^- History:/.test(l));
+    const history = at < 0 ? [] : lines.slice(at + 1);
+    const current = (at < 0 ? lines : lines.slice(0, at))
+      .map((l) => l.replace(/^\s*-\s*/, "").trim())
+      .join("; ");
+    if (current)
+      history.unshift(`  - r${r.revision} ${r.status}: ${clean(current)}`);
     changed = changed.replace(
       progress.raw,
-      `<!-- START-PLAN:PROGRESS:${task}:BEGIN -->\n- Updated: ${now}\n- Summary: ${clean(p.summary)}\n- Evidence: ${clean(p.evidence)}\n<!-- START-PLAN:PROGRESS:${task}:END -->`,
+      `<!-- START-PLAN:PROGRESS:${task}:BEGIN -->\n- Updated: ${now}\n- Summary: ${clean(p.summary)}\n- Evidence: ${clean(p.evidence)}\n${history.length ? "- History:\n" + history.join("\n") + "\n" : ""}<!-- START-PLAN:PROGRESS:${task}:END -->`,
     );
     let next = b.text
       .replace(r.block.raw, changed)

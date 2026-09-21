@@ -104,7 +104,7 @@ Notification 不是可靠通用閒置計時器，Codex 沒有此事件；Codex S
 {"action":"status","workspace":"/absolute/project","root":"/absolute/vault/handovers","taskId":"FEATURE-P01:IMPLEMENT"}
 ```
 
-action：resolve、hash、validate、status、update。可用 plan/task 取代 taskId，file 可明確指定 root 內檔案。update 加 status、claim、expectedHash、summary、evidence；進入 in_progress 需 caller 提供 claim，completed 需同 claim 及證據。待依賴未完成不能開工，已完成任務不能重開，其他 claim 不能接管。contract hash 保留 CRLF→LF 及 trim 規則；舊 Windows 路徑 hash 為後備查找。Node 介面以 JSON 取代舊 shell flags；不自動 Git、不強制末項 INTEGRATION。
+action：resolve、hash、validate、status、update。可用 plan/task 取代 taskId，file 可明確指定 root 內檔案。status／validate／resolve 另回 `wave_candidates`（ready、依賴完成、contract 有 `Sign-off: none` 與 `Resources`，且資源不與 in_progress 或同波較前任務重疊）及 `wave_excluded`（task 與原因：`status:*`、`sign_off:*`、`resources_unknown`、`resource_conflict:<resource>@<task>`、`in_progress_resources_unknown:<task>`）；它只是機械候選，不取代 COORD 判斷。`Resources` 以逗號分隔、`NONE` 表示無互斥資源。update 加 status、claim、expectedHash、summary、evidence；舊 progress 以 `rN status: …` 一行移入 `- History:`，新到舊保留；進入 in_progress 需 caller 提供 claim，completed 需同 claim 及證據。待依賴未完成不能開工，已完成任務不能重開，其他 claim 不能接管。contract hash 保留 CRLF→LF 及 trim 規則；舊 Windows 路徑 hash 為後備查找。Node 介面以 JSON 取代舊 shell flags；不自動 Git、不強制末項 INTEGRATION。
 
 ## 一致性與故障界限
 

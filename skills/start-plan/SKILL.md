@@ -19,6 +19,6 @@ description: 為跨 session、共享依賴或多項交付建立可接續計畫�
 
 ## Node 工具
 
-以 JSON stdin 呼叫 `node skills/start-plan/scripts/plan-board.mjs`，可用 action：resolve、hash、validate、status、update。欄位與範例見 [runtime](../../docs/runtime.md)。hash 保留 LF／CRLF 正規化及 trim，相容舊 locked contract；移除自動 commit／push、固定末項 INTEGRATION。更新需最新 expectedHash 與 claim。completed 不可重新開工；blocked claim 仍保留所有權。
+以 JSON stdin 呼叫 `node skills/start-plan/scripts/plan-board.mjs`，可用 action：resolve、hash、validate、status、update；status 同時列出可平行分波的機械候選（`wave_candidates`）與排除原因。欄位與範例見 [runtime](../../docs/runtime.md)。hash 保留 LF／CRLF 正規化及 trim，相容舊 locked contract；移除自動 commit／push、固定末項 INTEGRATION。更新需最新 expectedHash 與 claim。completed 不可重新開工；blocked claim 仍保留所有權。
 
 一般 handover 不可覆寫 board；全部 board 目標完成後，把完整目標及證據經核對遷入 handover 的完成 checkpoint，再依 finalize 保存知識與 status。board 本身保留為計畫來源，不自動刪除。

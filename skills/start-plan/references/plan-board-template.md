@@ -15,6 +15,12 @@
 ## 工作目標
 <goal>
 
+## 計畫完成條件
+<plan-level Done: required deliverables, integration evidence and who signs off the whole plan>
+
+## 協調規則
+<COORD identity, board writer, wave dispatch allowed or not, escalation path and shared resources outside any single task>
+
 | Done | Task | Status | Claim | Revision | Updated |
 |---|---|---|---|---:|---|
 | [ ] | IMPLEMENT | ready | - | 0 | - |
@@ -35,6 +41,9 @@
 - Completion Evidence: <required results, evidence locations and task Done>
 - Priority: P1
 - Depends-On: NONE
+- Resources: <exclusive files, working tree or environment, comma-separated; NONE if read-only>
+- Sign-off: <none, or who must decide/approve during or before completion>
+- Stop: <conditions that halt the task and return it to COORD, e.g. same root cause twice>
 <!-- START-PLAN:CONTRACT:IMPLEMENT:END -->
 <!-- START-PLAN:PROGRESS:IMPLEMENT:BEGIN -->
 - Summary: 尚未開始
@@ -42,6 +51,10 @@
 <!-- START-PLAN:PROGRESS:IMPLEMENT:END -->
 <!-- START-PLAN:TASK:IMPLEMENT:END -->
 ```
+
+`Resources`、`Sign-off`、`Stop` 為選填，寫在 contract 內，因此鎖定後同受 hash 保護。status 只把 ready、依賴完成、`Sign-off: none`、`Resources` 已宣告且未與進行中或同波任務重疊的任務列入 `wave_candidates`；缺欄位視為未知而不入波，原因列在 `wave_excluded`。是否跨多次 checkpoint、能否隔離仍由 COORD 判斷。計畫完成條件與協調規則位於 contract 外，變更時在 progress 留紀錄。
+
+update 會把舊 progress 壓成一行移入 `- History:`（新到舊），不再覆蓋先前證據。
 
 舊版附帶 Execution-Mode／Session-Budget／Worker 等欄位可讀且 hash 保持，不要求新計畫加入。修改 locked contract 須有明確需求變更依據，不能藉更新狀態偷改。
 
