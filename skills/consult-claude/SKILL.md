@@ -45,6 +45,22 @@ Codex 是協調者、驗證者與最終決策者；Claude 是外部顧問。Clau
 | second-opinion | 快速第二意見、小型 trade-off、命名、簡單檢查 | `sonnet` + `medium`（深度問題改 opus/high） |
 | implement | 僅在使用者明確要求「讓 Claude 修改／implement」時 | 依任務 |
 
+### Effort（與模型分開判斷）
+
+`--effort` 可選 `low`／`medium`／`high`／`xhigh`／`max`。模型決定能力；effort 決定單次推理深度，兩者獨立選：小範圍但推理刁鑽可用 `sonnet` + `high`；大範圍但只需逐項核對可用 `opus` + `medium`。
+
+| Effort | 何時用 |
+|---|---|
+| low | 機械式確認（已知訊息、格式、命名 sanity check） |
+| medium | 範圍明確、推理步驟少（單一函式、文件 review、快速第二意見） |
+| high | 多步推理、方案比較、追蹤資料流；多數 consultation 的預設 |
+| xhigh | 出錯代價高（security、production-critical bug、debate），或 `high` 結果矛盾／過淺 |
+| max | 只在使用者明確要求時 |
+
+- **一律明確傳 `--effort`**，不繼承使用者的 session 預設。
+- 使用者指定 effort 優先；CLI 不接受時回報，不自動降級。
+- 升級一次只升一步：Claude 理解了 context 但推理淺 → 同模型提高 effort；缺能力或誤解 context → `sonnet` 換 `opus`。在回報中註明原因。
+
 各模式的 prompt 範本與必要欄位見 [references/prompts.md](references/prompts.md)，呼叫前讀取對應段落。
 
 ## 流程
@@ -72,7 +88,7 @@ Codex 是協調者、驗證者與最終決策者；Claude 是外部顧問。Clau
 7. **輸出**：依情況精簡或完整使用下列格式，明確區分 Claude 原意見與 Codex 判斷：
 
    ```
-   ## Claude 的看法
+   ## Claude 的看法（模型：<model>／effort：<level>，理由）
    ## Codex 的檢查
    ## 差異
    ## 結論
@@ -80,7 +96,7 @@ Codex 是協調者、驗證者與最終決策者；Claude 是外部顧問。Clau
 
 ## Debate 限制
 
-Codex 立場 → Claude 對抗審查 → Codex 評估反駁 →（必要時）第二輪 Claude → Codex 綜合。預設最多 2 次 Claude 呼叫；使用者明確要求才多輪。
+Codex 立場 → Claude 對抗審查 → Codex 評估反駁 →（必要時）第二輪 Claude → Codex 綜合。預設 `opus` + `high`，高風險議題可 `xhigh`；最多 2 次 Claude 呼叫，使用者明確要求才多輪。
 
 ## Implementation mode
 
@@ -88,5 +104,5 @@ Codex 立場 → Claude 對抗審查 → Codex 評估反駁 →（必要時）�
 
 1. Codex 界定可修改的檔案範圍與驗收條件，寫進 prompt。
 2. Claude 修改期間，Codex 不修改同一批檔案。
-3. 呼叫：`claude -p --model <m> --effort <e> --tools "Read,Glob,Grep,Edit,Write" --permission-mode acceptEdits < "$prompt_file"`；除非使用者同意，不給 Bash。
+3. 呼叫：`claude -p --model <m> --effort <e> --tools "Read,Glob,Grep,Edit,Write" --permission-mode acceptEdits < "$prompt_file"`；除非使用者同意，不給 Bash。effort 依改動的推理難度選，機械式修改用 `medium`。
 4. 完成後 Codex 檢視 `git diff`（確認未超出範圍）、執行測試並自行做最終驗證。

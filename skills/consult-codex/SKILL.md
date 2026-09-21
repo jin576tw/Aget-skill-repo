@@ -49,13 +49,22 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
 3. **其餘**：大多數條件符合 Luna 準則選 Luna、符合 Terra 準則選 Terra、出現任一 Sol 重要條件考慮 Sol；仍不確定選 Terra。
 4. **升級**：只有在結果不足、存在矛盾、高風險 finding 或需要更深推理時，才 Luna → Terra → Sol 升一級；不要機械式每次跑三個模型。
 
-各模式預設與 Luna／Terra／Sol 的完整準則見 [references/model-routing.md](references/model-routing.md)，無法立即判斷時讀取。回報時說明選了哪個模型與一句理由。
+### Effort（與模型分開判斷）
+
+模型決定能力與 context 容量；effort（`model_reasoning_effort`）決定單次推理深度。兩者獨立選：範圍小但推理刁鑽 → Luna／Terra + `high`；範圍大但只需逐項核對 → 較大模型 + `medium`。
+
+- **一律明確傳 `-c 'model_reasoning_effort="<level>"'`**，不繼承 `~/.codex/config.toml`（使用者預設可能是 `low`）。
+- 使用者指定 effort 優先；模型不支援該 level 時回報，不自動降級。
+- 常用 `low`／`medium`／`high`；`xhigh` 只給 critical、security、debate 或 `high` 已不足的情況；`max`／`ultra` 僅在使用者要求時使用。
+- 升級時先判斷不足的原因：模型理解了 context 但推理淺 → 同模型提高一級 effort；缺能力或 context → 換大一級模型。一次只升一步。
+
+各模式預設與 Luna／Terra／Sol、effort 的完整準則見 [references/model-routing.md](references/model-routing.md)，無法立即判斷時讀取。回報時說明選了哪個模型、effort 與一句理由。
 
 ## 流程
 
 1. **CLI 檢查**：本 session 第一次使用前執行 `codex --version`。失敗就停止委派並告知使用者 CLI 未安裝、不在 PATH 或未登入；絕不模擬 Codex 的回答。
 2. **Claude 先思考**：second-opinion、architecture、debate 先形成自己的初步立場；review 先確認範圍（diff、檔案、需求）。
-3. **路由**：依上節選模型與 effort。
+3. **路由**：依上節分別選模型與 effort。
 4. **組 prompt**：採 [references/prompts.md](references/prompts.md) 的共通外框與對應模式段落，一律包含防遞迴規則（不得呼叫 Claude、不得執行 `claude -p`、不得委派其他外部 coding agent），提供必要 context，不附機密。
 5. **安全呼叫**：prompt 寫入暫存檔（quoted heredoc 或 Write 工具），以 stdin 傳入，不拼進命令列：
 
@@ -78,7 +87,7 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
 8. **輸出**：依情況精簡或完整使用下列格式，明確區分 Codex 原意見與 Claude 判斷：
 
    ```
-   ## Codex 的看法（模型：<model>，理由）
+   ## Codex 的看法（模型：<model>／effort：<level>，理由）
    ## Claude 的檢查
    ## 差異
    ## 結論
@@ -86,7 +95,7 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
 
 ## Debate 限制
 
-預設 Sol。Claude 立場 → Codex 對抗審查 → Claude 評估反駁 →（必要時）第二輪 Codex → Claude 綜合。最多 2 次 Codex 呼叫；使用者明確要求才多輪。
+預設 Sol + `high`（高風險議題可 `xhigh`）。Claude 立場 → Codex 對抗審查 → Claude 評估反駁 →（必要時）第二輪 Codex → Claude 綜合。最多 2 次 Codex 呼叫；使用者明確要求才多輪。
 
 ## Implementation mode
 
@@ -94,5 +103,5 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
 
 1. Claude 界定可修改的檔案範圍與驗收條件，寫進 prompt。
 2. Codex 修改期間，Claude 不修改同一批檔案。
-3. 呼叫改用 `-s workspace-write`（不使用 `--dangerously-bypass-approvals-and-sandbox`）。
+3. 呼叫改用 `-s workspace-write`（不使用 `--dangerously-bypass-approvals-and-sandbox`）；effort 依改動的推理難度選，機械式修改用 `medium`。
 4. 完成後 Claude 檢視 `git diff`（確認未超出範圍）、執行測試並自行做最終驗證。
