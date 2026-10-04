@@ -516,7 +516,7 @@ for (const stage of ["knowledge", "status", "delete"])
       fs.renameSync = (from, to, ...args) => {
         if (
           path.resolve(to) === path.resolve(
-            p.vault,
+            fs.realpathSync(p.vault),
             stage === "knowledge"
               ? "knowledge/method.md"
               : "projects/demo/status.md",

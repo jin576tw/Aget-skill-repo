@@ -118,6 +118,7 @@ export function locked(root, fn) {
   // Preserve an existing legacy lock exactly as-is; it has no owner identity.
   if (legacyLock(root)) fail("WRITE_LOCKED");
   recoverDeadLocks(root);
+  if (lockCandidates(root).length) fail("WRITE_LOCKED");
   const stamp = Date.now().toString(36).padStart(10, "0");
   const name = lockPrefix + stamp + "-" + process.pid + "-" + randomUUID();
   const lock = safe(root, name);
