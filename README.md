@@ -169,7 +169,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | 檔案 | 作用 | 由誰啟用 |
 |---|---|---|
 | `hooks/record.mjs` | 在 Stop、PreCompact、SessionEnd 等事件時 flush 暫存的 checkpoint（不會自動結案），並在每輪 Stop 於 `journal/log.md` 追加一行。 | plugin 的 `hooks/hooks.json`，或 setup 加 `--hooks` |
-| `hooks/model-prompt-tune.mjs` | Claude SessionStart 注入 Claude 家族表；Codex UserPromptSubmit 首次或換模型時注入該模型指令。 | setup 加 `--hooks` |
+| `hooks/model-prompt-tune.mjs` | Claude SessionStart 注入 Claude 家族表；Codex UserPromptSubmit 首次或換模型時注入該模型指令。 | Claude：plugin 的 `hooks/hooks.json` 或 setup 加 `--hooks`；Codex：僅 setup 加 `--hooks`（Codex manifest 不載入 hooks.json） |
 | `hooks/pitfall-guard.mjs` | PreToolUse 時比對 `$MEMORY_VAULT/knowledge/pitfalls.json`，命中就提示，永不阻擋。 | 預設不啟用，需自行加進 settings |
 | `hooks/session-start-context.mjs` | SessionStart 時偵測專案技術棧（package.json、pom.xml）。 | 預設不啟用，需自行加進 settings |
 

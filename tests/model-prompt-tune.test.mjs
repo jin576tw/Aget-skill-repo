@@ -55,6 +55,8 @@ test("hook injects Claude family once and Codex only on first model or change", 
   assert.match(family.additionalContext, /claude-fable-5-1/);
   assert.match(family.additionalContext, /claude-sonnet-5-5/);
   assert.doesNotMatch(family.additionalContext, /gpt-/);
+  assert.match(family.additionalContext, /^claude-haiku-4-5: /m);
+  assert.doesNotMatch(family.additionalContext, /[()?\\]/);
   const base = { hook_event_name: "UserPromptSubmit", session_id: "session123", model: "gpt-5.6-luna", prompt: "SECRET_PROMPT" };
   const first = run(base);
   assert.equal(first.status, 0);

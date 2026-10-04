@@ -1,6 +1,7 @@
 {
-  "description": "Aget checkpoint flush and per-turn journal; the journal writes only when MEMORY_VAULT is set and no setup installation with hooks owns the cwd.",
+  "description": "Aget checkpoint flush and per-turn journal (the journal writes only when MEMORY_VAULT is set and no setup installation with hooks owns the cwd), plus the Claude model-family prompt guide at SessionStart.",
   "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/model-prompt-tune.mjs\"", "timeout": 3 }] }],
     "Stop": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/record.mjs\" --plugin", "timeout": 15 }] }],
     "Notification": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/record.mjs\" --plugin", "timeout": 15 }] }],
     "PreCompact": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/record.mjs\" --plugin", "timeout": 15 }] }],

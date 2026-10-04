@@ -409,7 +409,7 @@ test("--plugin yields the journal to a user-scope setup install outside the cwd 
   assert.equal(fs.existsSync(path.join(p.vault, "journal/log.md")), false);
   assert.equal(hook(event, env).stdout, updated);
 });
-test("plugin hooks.json runs record.mjs for every Claude setup event", () => {
+test("plugin hooks.json runs record.mjs for every Claude setup event and the model guide at SessionStart", () => {
   const config = JSON.parse(
     fs.readFileSync(path.join(root, "hooks/hooks.json"), "utf8"),
   );
@@ -417,14 +417,17 @@ test("plugin hooks.json runs record.mjs for every Claude setup event", () => {
     "Notification",
     "PreCompact",
     "SessionEnd",
+    "SessionStart",
     "Stop",
     "SubagentStop",
     "TaskCompleted",
   ]);
-  for (const entries of Object.values(config.hooks))
+  for (const [event, entries] of Object.entries(config.hooks))
     assert.equal(
       entries[0].hooks[0].command,
-      'node "${CLAUDE_PLUGIN_ROOT}/hooks/record.mjs" --plugin',
+      event === "SessionStart"
+        ? 'node "${CLAUDE_PLUGIN_ROOT}/hooks/model-prompt-tune.mjs"'
+        : 'node "${CLAUDE_PLUGIN_ROOT}/hooks/record.mjs" --plugin',
     );
 });
 test("SubagentStop and Notification never write the journal", (t) => {

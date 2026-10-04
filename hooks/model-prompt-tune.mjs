@@ -12,6 +12,10 @@ function emit(event, additionalContext) {
   }));
 }
 
+function label(model) {
+  return model.match.slice(1, -1).replace(/\([^)]*\)\?/g, "").replace(/\\\./g, ".");
+}
+
 function directive(profile, tiers) {
   return [tiers[profile.tier].directive, ...profile.directives].join(" ");
 }
@@ -23,7 +27,7 @@ async function main() {
   const { tiers, models } = JSON.parse(fs.readFileSync(profilesFile, "utf8"));
   if (input.hook_event_name === "SessionStart") {
     const lines = models.filter((model) => model.family === "claude")
-      .map((model) => `${model.match.slice(1, -1)}: ${directive(model, tiers)}`);
+      .map((model) => `${label(model)}: ${directive(model, tiers)}`);
     if (lines.length) emit("SessionStart", `Claude 模型精簡指引；只套用目前模型對應的一行：\n${lines.join("\n")}`);
     return;
   }
