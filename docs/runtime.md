@@ -91,8 +91,8 @@ hook 僅 flush 已有 request，不掃描 transcript、不呼叫模型、不 fin
 
 | 宿主 | 設定與事件 |
 |---|---|
-| Claude | .claude/settings.json：Stop、Notification、PreCompact、SessionEnd、TaskCompleted、SubagentStop |
-| Codex | .codex/hooks.json：Stop、PermissionRequest、PreCompact、SessionEnd、Interrupt、SubagentStop |
+| Claude | .claude/settings.json：SessionStart 模型指引；Stop、Notification、PreCompact、SessionEnd、TaskCompleted、SubagentStop 紀錄 hook |
+| Codex | .codex/hooks.json：UserPromptSubmit 模型指引；Stop、PermissionRequest、PreCompact、SessionEnd、Interrupt、SubagentStop 紀錄 hook |
 
 Notification 不是可靠通用閒置計時器，Codex 沒有此事件；Codex SessionEnd 與 Claude clear 語意不同。兩者均不可依事件推論任務已完成。依實際信任及版本載入，不跳過宿主信任檢查。[Claude 官方 hooks](https://code.claude.com/docs/en/hooks)、[Codex 官方 hooks](https://learn.chatgpt.com/docs/hooks)（2026-09-12 核對）。
 

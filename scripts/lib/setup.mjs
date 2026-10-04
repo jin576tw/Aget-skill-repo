@@ -256,6 +256,24 @@ export function setup(p) {
             ],
           });
         }
+        const tuneEvent = host === "claude" ? "SessionStart" : "UserPromptSubmit";
+        const tuneCmd = hookCommand(
+          process.execPath,
+          path.join(root, ".aget/plugin/hooks/model-prompt-tune.mjs"),
+        );
+        const tuneEntries = config.hooks[tuneEvent] ?? [];
+        if (!Array.isArray(tuneEntries)) fail("INVALID_HOOK_CONFIG");
+        config.hooks[tuneEvent] = tuneEntries
+          .map((entry) => ({
+            ...entry,
+            hooks: entry.hooks?.filter(
+              (h) => h.command !== previous.hookTuneCommand && h.command !== tuneCmd,
+            ),
+          }))
+          .filter((entry) => entry.hooks?.length);
+        config.hooks[tuneEvent].push({
+          hooks: [{ type: "command", command: tuneCmd, timeout: 3 }],
+        });
         planned.push({
           rel,
           file,
@@ -304,6 +322,9 @@ export function setup(p) {
             undefined,
             hookArgs,
           )
+        : null,
+      hookTuneCommand: hooksEnabled
+        ? hookCommand(process.execPath, path.join(root, ".aget/plugin/hooks/model-prompt-tune.mjs"))
         : null,
       files: owned,
       blocks,

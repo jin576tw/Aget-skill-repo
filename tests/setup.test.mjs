@@ -77,6 +77,10 @@ test("hooks are host-specific, repeated setup preserves unrelated hooks", (t) =>
   assert.equal(codex.hooks.Notification, undefined);
   assert.ok(codex.hooks.Interrupt);
   assert.equal(codex.hooks.SessionEnd[0].hooks[0].timeout, 3);
+  assert.equal(claude.hooks.SessionStart.length, 1);
+  assert.match(claude.hooks.SessionStart[0].hooks[0].command, /model-prompt-tune\.mjs/);
+  assert.equal(codex.hooks.UserPromptSubmit.length, 1);
+  assert.match(codex.hooks.UserPromptSubmit[0].hooks[0].command, /model-prompt-tune\.mjs/);
 });
 test("hook vault argument is added once and kept on later setup", (t) => {
   const dir = target(t);

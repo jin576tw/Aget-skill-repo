@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "tiers": {
+    "frontier": {
+      "directive": "以完整目標和完成標準規劃並執行；只在真正阻塞或高風險操作需要決定時停下。"
+    },
+    "balanced": {
+      "directive": "依目標完成實作與必要驗證；遇到未定義的重要規則先釐清。"
+    },
+    "efficient": {
+      "directive": "依「任務目標／輸入與範圍／明確規則／步驟／完成標準／不做的事」理解並執行；未說明的重要業務規則先問，不自行推定。"
+    }
+  },
+  "models": [
+    {"match":"^claude-opus-4-8$","family":"claude","tier":"frontier","directives":["程式與代理任務可從 xhigh effort 起步；簡單任務直接簡答。","Code review 全部回報，附信心度與嚴重度。"],"source":"claude_models_guide_mobile.pdf pp.4-7","reviewed":"2026-09-26"},
+    {"match":"^claude-sonnet-5$","family":"claude","tier":"balanced","directives":["複雜程式與代理任務提高 effort；留意思考與答案共用輸出額度。","Code review 全部回報，附信心度與嚴重度。"],"source":"claude_models_guide_mobile.pdf pp.10-12","reviewed":"2026-09-26"},
+    {"match":"^claude-opus-5$","family":"claude","tier":"frontier","directives":["回應與文件按任務所需長度精簡；避免額外擴張任務。","只把大型且獨立的工作交給子代理；不要用子代理驗證自己的工作。"],"source":"claude_models_guide_mobile.pdf pp.13-16","reviewed":"2026-09-26"},
+    {"match":"^claude-opus-5-5$","family":"claude","tier":"frontier","directives":["完成標準明確時持續執行；不加入『想仔細一點』類提示。","說明決策理由即可，不要求覆誦內部推理。"],"source":"claude_models_guide_mobile.pdf pp.17-22","reviewed":"2026-09-26"},
+    {"match":"^claude-fable-5-1$","family":"claude","tier":"frontier","directives":["長任務中，屬原請求且可逆的步驟直接執行，不問『要我…嗎』；變更只做請求所需，其餘列為後續。","工作中依需要簡短更新進度，結尾附能獨立閱讀的摘要。"],"source":"https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1","reviewed":"2026-10-02"},
+    {"match":"^claude-sonnet-5-5$","family":"claude","tier":"balanced","directives":["依目標做到全部完成，只在真正阻塞或有風險時停；完成並檢查通過即停止回報，不自行追加功能、測試或審查。","改了可執行的程式碼，回報完成前先跑真實檢查（測試、型別檢查或建置）。"],"source":"https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5","reviewed":"2026-10-02"},
+    {"match":"^claude-haiku-4-5(-20251001)?$","family":"claude","tier":"efficient","directives":["適合快速、範圍明確的任務；遇到多檔因果判斷或架構取捨時回報缺口。","不支援 effort 參數；回覆長度與思考深度靠提示控制。"],"source":"https://platform.claude.com/docs/en/models/overview","reviewed":"2026-10-02"},
+    {"match":"^gpt-6-astra$","family":"gpt","tier":"frontier","directives":["適合大型、未完全定義或多系統工作；先釐清完成標準，再規劃、實作與驗證。"],"source":"codex_models_guide_mobile.pdf p.3","reviewed":"2026-09-26"},
+    {"match":"^gpt-6-sol$","family":"gpt","tier":"balanced","directives":["適合日常複雜開發、bug 與審查；依範圍完成多步推理與驗證。"],"source":"codex_models_guide_mobile.pdf p.4","reviewed":"2026-09-26"},
+    {"match":"^gpt-6\\.1-sol$","family":"gpt","tier":"balanced","directives":["適合複雜重構、深度調查與長時間工作；使用者表達要做或修的事就持續到目標完成，已授權的工作先做完再請求核准。","指令衝突時說明採用哪一條；低影響可逆的變更不必另寫測試。"],"source":"https://developers.openai.com/api/docs/guides/prompt-guidance","reviewed":"2026-10-02"},
+    {"match":"^gpt-6-luna$","family":"gpt","tier":"efficient","directives":["適合明確、高量或固定範例的工作；遇到架構與多檔因果判斷時回報缺口。"],"source":"codex_models_guide_mobile.pdf p.5","reviewed":"2026-09-26"},
+    {"match":"^gpt-5\\.6-sol$","family":"gpt","tier":"frontier","directives":["適合大型重構、架構決策與高風險審查；完成後附驗證證據。"],"source":"codex_models_guide_mobile.pdf p.6","reviewed":"2026-09-26"},
+    {"match":"^gpt-5\\.6-terra$","family":"gpt","tier":"balanced","directives":["適合規格清楚的中型實作；遇到不明確需求或重大取捨時回報。"],"source":"codex_models_guide_mobile.pdf p.7","reviewed":"2026-09-26"},
+    {"match":"^gpt-5\\.6-luna$","family":"gpt","tier":"efficient","directives":["適合固定規則、批次小改與資訊整理；不要自行推定重要業務規則。"],"source":"codex_models_guide_mobile.pdf p.8","reviewed":"2026-09-26"}
+  ]
+}

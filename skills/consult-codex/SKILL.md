@@ -4,7 +4,7 @@ description: >
   Consult Codex from Claude Code through the local `codex exec` CLI for
   independent code review, second opinions, architecture discussion, debugging
   analysis and adversarial debate, routing each call to the smallest reliable
-  GPT-5.6 model (Luna / Terra / Sol). Claude Code remains the coordinator,
+  model listed in rules/model-profiles.json. Claude Code remains the coordinator,
   verifier and final decision-maker.
   Use when the user explicitly asks for Codex or GPT (ask/consult Codex, Codex
   review, second opinion from Codex, debate Codex, use Luna/Terra/Sol, 問一下
@@ -27,7 +27,7 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
 
 ## 何時呼叫
 
-1. 使用者明確要求 Codex、GPT 或 Luna／Terra／Sol。
+1. 使用者明確要求 Codex、GPT，或指名某個 GPT 模型。
 2. 複雜 code review、架構、除錯或方案取捨，獨立意見能顯著增加價值。
 
 一般 coding 任務不呼叫。若目前宿主本身就是 Codex，不要透過 CLI 呼叫自己。
@@ -36,11 +36,7 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
 
 目標是**足以可靠完成任務的最小模型**，不是一律用 Sol，也不是為省成本把難題丟給 Luna。
 
-| 模型 | 定位 | 指令參數 |
-|---|---|---|
-| Luna | 快速、範圍明確、低風險的小任務 | `-m gpt-5.6-luna -c 'model_reasoning_effort="medium"'` |
-| Terra | 一般工程 consultation，**無法判斷時的預設** | `-m gpt-5.6-terra -c 'model_reasoning_effort="high"'` |
-| Sol | 深度推理、高風險、跨模組、高不確定性 | `-m gpt-5.6-sol -c 'model_reasoning_effort="high"'` |
+模型 ID、定位與 tier 以 [model-profiles.json](../../rules/model-profiles.json) 為準，不在此複製。大致分級：efficient（Luna 類）給快速、範圍明確、低風險的小任務；balanced 給一般工程 consultation，**無法判斷時的預設**；frontier 給深度推理、高風險、跨模組、高不確定性。指令寫成 `-m <model-id> -c 'model_reasoning_effort="<level>"'`。
 
 判斷依據是 scope、complexity、uncertainty、risk、檔案／模組數與是否需要架構推理，**不是 prompt 長度**：一句「要不要把 shared state 換成 Signals？」是架構決策（Sol）；很長的 log 只要求確認已知錯誤訊息仍可用 Luna／Terra。
 
@@ -65,7 +61,7 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
 1. **CLI 檢查**：本 session 第一次使用前執行 `codex --version`。失敗就停止委派並告知使用者 CLI 未安裝、不在 PATH 或未登入；絕不模擬 Codex 的回答。
 2. **Claude 先思考**：second-opinion、architecture、debate 先形成自己的初步立場；review 先確認範圍（diff、檔案、需求）。
 3. **路由**：依上節分別選模型與 effort。
-4. **組 prompt**：採 [references/prompts.md](references/prompts.md) 的共通外框與對應模式段落，一律包含防遞迴規則（不得呼叫 Claude、不得執行 `claude -p`、不得委派其他外部 coding agent），提供必要 context，不附機密。
+4. **組 prompt**：採 [references/prompts.md](references/prompts.md) 的共通外框與對應模式段落；先依 [模型對照表與組裝方式](references/model-routing.md) 加入目標模型的精簡指令，efficient tier 採任務格式。一律包含防遞迴規則（不得呼叫 Claude、不得執行 `claude -p`、不得委派其他外部 coding agent），提供必要 context，不附機密。
 5. **安全呼叫**：prompt 寫入暫存檔（quoted heredoc 或 Write 工具），以 stdin 傳入，不拼進命令列：
 
    ```sh
@@ -73,7 +69,7 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
    cat > "$prompt_file" <<'CODEX_PROMPT'
    ...prompt...
    CODEX_PROMPT
-   codex exec -m gpt-5.6-terra -c 'model_reasoning_effort="high"' \
+   codex exec -m <model-id> -c 'model_reasoning_effort="high"' \
      -s read-only --ephemeral -C "<repo>" \
      -o "$prompt_file.out" - < "$prompt_file" > "$prompt_file.log" 2>&1
    echo "exit=$?"

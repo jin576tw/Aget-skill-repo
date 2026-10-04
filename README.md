@@ -155,6 +155,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | 腳本 | 用途 |
 |---|---|
 | `scripts/setup-work.mjs` | 安裝、更新、檢查（見上方參數表）。 |
+| `scripts/model-prompt.mjs <model-id>` | 從唯一對照表輸出派工目標模型的精簡指令。 |
 | `scripts/memory.mjs checkpoint` ／ `finalize` | 保存 handover；完成後蒸餾知識、更新 status 並刪除交接。從 stdin 讀 JSON。 |
 | `scripts/stage-checkpoint.mjs` | 先暫存 checkpoint，讓 hook 在 Stop、compact 等事件時補寫。 |
 | `scripts/migrate-handover.mjs` | 把舊格式 handover 轉成新格式。 |
@@ -168,6 +169,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | 檔案 | 作用 | 由誰啟用 |
 |---|---|---|
 | `hooks/record.mjs` | 在 Stop、PreCompact、SessionEnd 等事件時 flush 暫存的 checkpoint（不會自動結案），並在每輪 Stop 於 `journal/log.md` 追加一行。 | plugin 的 `hooks/hooks.json`，或 setup 加 `--hooks` |
+| `hooks/model-prompt-tune.mjs` | Claude SessionStart 注入 Claude 家族表；Codex UserPromptSubmit 首次或換模型時注入該模型指令。 | setup 加 `--hooks` |
 | `hooks/pitfall-guard.mjs` | PreToolUse 時比對 `$MEMORY_VAULT/knowledge/pitfalls.json`，命中就提示，永不阻擋。 | 預設不啟用，需自行加進 settings |
 | `hooks/session-start-context.mjs` | SessionStart 時偵測專案技術棧（package.json、pom.xml）。 | 預設不啟用，需自行加進 settings |
 
@@ -192,6 +194,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 - [recording-lifecycle](docs/recording-lifecycle.md)：紀錄與 handover 的生命週期
 - [tool-design-audit](docs/tool-design-audit.md)：每個工具保留或移除的理由
 - [validation](docs/validation.md)：已驗證與尚未驗證的範圍
+- [model-prompt-tune](docs/model-prompt-tune.md)：模型對照表、更新與重裝流程
 
 ## 驗證
 
