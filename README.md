@@ -15,6 +15,7 @@
 | 手動點名 skill | `/aget-skill-repo:start-work` | `/aget-start-work` |
 | 規範區塊（CLAUDE.md／AGENTS.md） | 不寫入 | 寫入受管理區塊 |
 | hooks | 隨 plugin 啟用；未設定 `MEMORY_VAULT` 時不寫 journal | 加 `--hooks` 才啟用 |
+| Mods（Claude Code 2.1.287+） | 另裝 `usage-dashboard@aget` | user scope 加 `--mods` |
 | 更新 | `/plugin` 更新 | 重跑同一行指令 |
 
 `npx` 安裝不支援：本套件沒有發佈到 npm。
@@ -36,6 +37,8 @@
 claude plugin marketplace add jin576tw/Aget-skill-repo@start-work-plugin
 claude plugin install aget-skill-repo@aget
 ```
+
+要用量儀表板 Mod，另裝：`/plugin install usage-dashboard@aget`。
 
 plugin 會載入 skills、agents 與 `hooks/hooks.json`，但不會修改你的 CLAUDE.md。要讓每輪結束時寫入 journal，需在 `~/.claude/settings.json` 的 `env` 設定 `MEMORY_VAULT`（知識庫的絕對路徑）；沒設定時 hook 只會 flush 既有的 checkpoint，不輸出任何訊息。若同一個目錄已有啟用 hooks 的 setup-work 安裝，journal 交給該安裝寫入，不會重複。
 
@@ -66,6 +69,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | `--platform` | `claude`、`codex` 或 `both`（預設）。 |
 | `--scope` | `project`（預設）或 `user`。 |
 | `--hooks` | 啟用事件 hooks。之後更新時會沿用。 |
+| `--mods` | 啟用 `mods/` 下的 Claude Code Mods。只限 user scope 且平台含 claude：把 `<target>/.aget/plugin/mods/<name>` 加進 `~/.claude/settings.json` 的 `env.CLAUDE_CODE_PLUGIN_DIRS`，保留原有路徑。之後更新時會沿用。 |
 | `--vault` | 每輪 journal 要寫入的知識庫路徑。 |
 | `--check` | 只檢查是否需要更新，不寫入。 |
 
@@ -75,6 +79,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 - skills 以 `aget-*` symlink 放進 `.claude/skills` 與 `.agents/skills`。
 - agents 以 `aget-*` 放進 `.claude/agents`。
 - CLAUDE.md／AGENTS.md 只更新 `<!-- aget:work -->` 區塊。
+- `--mods` 時，Mods 以 plugin 資料夾形式從 `.aget/plugin/mods/` 載入，不會連帶把整個 Aget 以 plugin 身分再載入一次。
 
 手動改過受管理的檔案時，腳本會回報衝突，不會覆寫。完整行為見 [runtime](docs/runtime.md)。
 
@@ -173,6 +178,14 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | `hooks/pitfall-guard.mjs` | PreToolUse 時比對 `$MEMORY_VAULT/knowledge/pitfalls.json`，命中就提示，永不阻擋。 | 預設不啟用，需自行加進 settings |
 | `hooks/session-start-context.mjs` | SessionStart 時偵測專案技術棧（package.json、pom.xml）。 | 預設不啟用，需自行加進 settings |
 
+### Mods
+
+需 Claude Code 2.1.287 以上；CLI 與 Desktop Code 分頁共用。每個 Mod 是獨立 plugin。
+
+| Mod | 作用 | 由誰啟用 |
+|---|---|---|
+| [usage-dashboard](mods/usage-dashboard/README.md) | 提示框上方顯示 context 已用／剩餘 token、5 小時與 7 天方案額度剩餘百分比和重置時間、session 費用。`/usage-dashboard` 切換顯示。 | `/plugin install usage-dashboard@aget`，或 setup 加 `--mods` |
+
 ## 舊版指令對照
 
 舊版的 10 個 slash commands 已移除，功能併入以下 skills：
@@ -201,6 +214,8 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 ```sh
 npm test
 npm run check
+claude plugin validate mods/usage-dashboard
+claude plugin test mods/usage-dashboard
 ```
 
 測試通過只證明套件與 fixture 行為正確，不代表模型在真實對話中每次都會選對 skill。實機驗證範圍見 [validation](docs/validation.md)。

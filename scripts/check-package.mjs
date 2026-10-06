@@ -70,8 +70,25 @@ for (const entries of Object.values(pluginHooks.hooks))
       for (const [, rel] of command.matchAll(/\$\{CLAUDE_PLUGIN_ROOT\}\/([^"\s]+)/g))
         if (!fs.existsSync(path.join(sourceRoot, rel)))
           errors.push("Plugin hook script missing: " + rel);
-// The README tool tables are the user-facing index, so every shipped skill and agent must appear there.
 const readme = fs.readFileSync(path.join(sourceRoot, "README.md"), "utf8");
+// Each mod is its own plugin folder whose hooks.json names the modules the engine loads.
+const modsRoot = path.join(sourceRoot, "mods");
+for (const name of fs.existsSync(modsRoot) ? fs.readdirSync(modsRoot) : []) {
+  const dir = path.join(modsRoot, name);
+  if (!fs.statSync(dir).isDirectory()) continue;
+  const manifest = path.join(dir, ".claude-plugin/plugin.json");
+  if (!fs.existsSync(manifest) || JSON.parse(fs.readFileSync(manifest)).name !== name)
+    errors.push("Invalid mod manifest: " + name);
+  const hooksFile = path.join(dir, "hooks/hooks.json");
+  const modules = fs.existsSync(hooksFile) ? JSON.parse(fs.readFileSync(hooksFile)).modules : null;
+  if (!Array.isArray(modules) || modules.length === 0)
+    errors.push("Mod hooks.json has no modules: " + name);
+  for (const rel of modules ?? [])
+    if (!fs.existsSync(path.join(dir, "hooks", rel)))
+      errors.push("Mod module missing: " + name + "/" + rel);
+  if (!readme.includes(`(mods/${name}/README.md)`)) errors.push("README missing mod: " + name);
+}
+// The README tool tables are the user-facing index, so every shipped skill and agent must appear there.
 for (const name of fs.readdirSync(path.join(sourceRoot, "skills")))
   if (
     fs.existsSync(path.join(sourceRoot, "skills", name, "SKILL.md")) &&

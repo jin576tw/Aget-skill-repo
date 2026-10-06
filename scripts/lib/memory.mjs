@@ -8,6 +8,7 @@ import {
   atomic,
   locked,
   workspaceInfo,
+  foreignWorkspaceInfo,
   slug,
   fail,
 } from "./files.mjs";
@@ -60,7 +61,14 @@ export function validateCheckpoint(s) {
     fail("GOALS_NOT_COMPLETE");
 }
 function identity(p) {
-  const w = workspaceInfo(p.workspace);
+  let w;
+  try {
+    w = workspaceInfo(p.workspace);
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+    w = foreignWorkspaceInfo(p.workspace);
+    if (!w) throw e;
+  }
   return { w, rel: `handovers/${w.prefix}--${slug(p.task)}.md` };
 }
 function content(s) {
@@ -99,6 +107,8 @@ export function checkpoint(p, migration = false) {
           fail("TASK_MISMATCH");
       }
     } else if (migration) fail("HANDOVER_MISSING");
+    // Another OS's workspace may only continue a handover that OS started.
+    else if (w.foreign) fail("FOREIGN_WORKSPACE_HANDOVER_MISSING");
     const stable = {
       workspace: w.resolved,
       task: p.task,

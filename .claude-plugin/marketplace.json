@@ -14,6 +14,13 @@
       "description": "Goal-based development and portable task memory",
       "repository": "https://github.com/jin576tw/Aget-skill-repo",
       "category": "productivity"
+    },
+    {
+      "name": "usage-dashboard",
+      "source": "./mods/usage-dashboard",
+      "description": "Claude Code Mod：提示框上方顯示 context 剩餘 token、方案額度剩餘百分比與重置時間",
+      "repository": "https://github.com/jin576tw/Aget-skill-repo",
+      "category": "productivity"
     }
   ]
 }

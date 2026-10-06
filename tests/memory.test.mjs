@@ -593,3 +593,35 @@ test("staged complete checkpoint is downgraded by deferred event", (t) => {
   assert.equal(parseCheckpoint(fs.readFileSync(file, "utf8")).status, "active");
   assert.throws(() => finalize(finish(p, digest(file))), /GOALS_NOT_COMPLETE/);
 });
+test("checkpoint continues a handover recorded with another OS's workspace path", (t) => {
+  const { p } = fixture(t);
+  const foreign = process.platform === "win32"
+    ? "/Users/someone/Desktop/ESP-Workspace"
+    : "C:\\Users\\003689\\Desktop\\ESP-Workspace";
+  const first = checkpoint(p);
+  const own = path.join(p.vault, first.path);
+  // The other OS keys a Windows path by its lowercased backslash form, a POSIX one by its lowercased form.
+  const prefix = process.platform === "win32" ? "esp-workspace--" + sha("/users/someone/desktop/esp-workspace").slice(0, 8)
+    : "esp-workspace--61ea0377";
+  const file = path.join(p.vault, `handovers/${prefix}--feature.md`);
+  const text = fs.readFileSync(own, "utf8")
+    .replace(JSON.stringify(workspaceInfo(p.workspace).resolved), JSON.stringify(foreign));
+  fs.writeFileSync(file, text);
+  fs.rmSync(own);
+  const next = checkpoint({
+    ...p,
+    workspace: foreign,
+    goals: [{ id: "G1", title: "保留完整目標", state: "pass", evidence: "跨平台接續" }],
+    expectedHash: sha(text),
+  });
+  assert.equal(next.signal, "CHECKPOINT_SAVED");
+  assert.equal(next.path, `handovers/${prefix}--feature.md`);
+  const state = parseCheckpoint(fs.readFileSync(file, "utf8"));
+  assert.equal(state.workspace, foreign);
+  assert.equal(state.revision, 2);
+  assert.throws(
+    () => checkpoint({ ...p, workspace: foreign, task: "other", expectedHash: "MISSING" }),
+    /FOREIGN_WORKSPACE_HANDOVER_MISSING/,
+  );
+  assert.throws(() => checkpoint({ ...p, workspace: "relative/missing" }), /ENOENT/);
+});

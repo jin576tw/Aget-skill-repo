@@ -288,3 +288,32 @@ test("update prunes directories emptied by removed files but keeps stray files",
   assert.ok(fs.existsSync(path.join(plugin, "handover/SKILL.md")));
   assert.equal(setup({ target: dir, source, platform: "codex", check: true }).signal, "SETUP_CURRENT");
 });
+test("mods join CLAUDE_CODE_PLUGIN_DIRS once, keep user paths and need user scope", (t) => {
+  const dir = target(t);
+  fs.mkdirSync(path.join(dir, ".claude"));
+  fs.writeFileSync(
+    path.join(dir, ".claude/settings.json"),
+    JSON.stringify({ env: { CLAUDE_CODE_PLUGIN_DIRS: "/mine/mod", OTHER: "1" } }),
+  );
+  const mod = path.join(fs.realpathSync(dir), ".aget/plugin/mods/usage-dashboard");
+  const x = setup({ target: dir, scope: "user", platform: "claude", mods: true, hooks: true });
+  assert.deepEqual(x.mods, ["usage-dashboard"]);
+  assert.ok(fs.existsSync(path.join(mod, "hooks/register.tsx")));
+  const read = () => JSON.parse(fs.readFileSync(path.join(dir, ".claude/settings.json"), "utf8"));
+  assert.equal(read().env.CLAUDE_CODE_PLUGIN_DIRS, ["/mine/mod", mod].join(path.delimiter));
+  assert.equal(read().env.OTHER, "1");
+  assert.ok(read().hooks.Stop.length);
+  // Later runs keep the flag from the manifest and never duplicate the path.
+  setup({ target: dir, scope: "user", platform: "claude" });
+  assert.equal(read().env.CLAUDE_CODE_PLUGIN_DIRS, ["/mine/mod", mod].join(path.delimiter));
+  assert.equal(setup({ target: dir, scope: "user", platform: "claude", check: true }).signal, "SETUP_CURRENT");
+  // Engine-generated types inside the installed mod are not managed files.
+  fs.mkdirSync(path.join(mod, ".claude-plugin/types"), { recursive: true });
+  fs.writeFileSync(path.join(mod, ".claude-plugin/types/tsconfig.json"), "{}");
+  assert.equal(setup({ target: dir, scope: "user", platform: "claude" }).signal, "SETUP_COMPLETE");
+  assert.throws(() => setup({ target: target(t), mods: true }), /MODS_REQUIRE_USER_SCOPE/);
+  assert.throws(
+    () => setup({ target: target(t), scope: "user", platform: "codex", mods: true }),
+    /MODS_REQUIRE_CLAUDE/,
+  );
+});

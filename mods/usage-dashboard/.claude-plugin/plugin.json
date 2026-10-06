@@ -1,0 +1,7 @@
+{
+  "name": "usage-dashboard",
+  "version": "0.1.0",
+  "author": { "name": "chinyu.wu" },
+  "description": "提示框上方顯示 context 剩餘 token、訂閱方案額度剩餘百分比與重置時間、session 費用",
+  "types": "./types/index.d.ts"
+}

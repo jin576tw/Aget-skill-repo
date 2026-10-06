@@ -39,7 +39,9 @@ function replace(text, label, value) {
 const wrap = (label, body) =>
   `<!-- aget:${label}:begin -->\n${body.trim()}\n<!-- aget:${label}:end -->`;
 const normalizeNewlines = (text) => text.replace(/\r\n?/g, "\n");
-const textFile = (rel) => /\.(?:json|md|mjs|ps1)$/i.test(rel);
+const textFile = (rel) => /\.(?:json|md|mjs|ps1|ts|tsx)$/i.test(rel);
+// Claude Code lays generated API types inside a loaded mod; they are never source.
+const generated = (rel) => /^mods\/[^/]+\/\.claude-plugin\/types\//.test(rel);
 function hashFile(file) {
   try {
     return sha(fs.readFileSync(file));
@@ -110,10 +112,12 @@ export function setup(p) {
       ".claude-plugin",
       ".codex-plugin",
       "hooks",
+      "mods",
     ])
       if (fs.existsSync(path.join(source, dir)))
         for (const rel of files(path.join(source, dir))) {
           const sourceRel = dir + "/" + rel;
+          if (generated(sourceRel)) continue;
           add(
             ".aget/plugin/" + sourceRel,
             fs.readFileSync(path.join(source, sourceRel)),
@@ -200,15 +204,22 @@ export function setup(p) {
     // Hosts without MEMORY_VAULT (Codex) need the vault passed to the per-turn journal hook.
     const vault = p.vault ?? previous.vault ?? null;
     const hookArgs = vault ? ["--vault", vault] : [];
+    // Host config files are edited once even when hooks and mods both touch them.
+    const configs = {};
+    const hostConfig = (rel) => {
+      if (!configs[rel]) {
+        const file = safe(root, rel);
+        configs[rel] = { file, config: JSON.parse(read(file) || "{}") };
+      }
+      return configs[rel].config;
+    };
     if (hooksEnabled) {
       for (const host of platform === "both"
         ? ["claude", "codex"]
         : [platform]) {
         const rel =
           host === "claude" ? ".claude/settings.json" : ".codex/hooks.json";
-        const file = safe(root, rel);
-        const text = read(file) || "{}",
-          config = JSON.parse(text);
+        const config = hostConfig(rel);
         const cmd = hookCommand(
           process.execPath,
           path.join(root, ".aget/plugin/hooks/record.mjs"),
@@ -274,14 +285,38 @@ export function setup(p) {
         config.hooks[tuneEvent].push({
           hooks: [{ type: "command", command: tuneCmd, timeout: 3 }],
         });
-        planned.push({
-          rel,
-          file,
-          data: Buffer.from(JSON.stringify(config, null, 2) + "\n"),
-          expected: hashFile(file),
-        });
       }
     }
+    // Mods load only as plugin folders; Claude Code reads CLAUDE_CODE_PLUGIN_DIRS from user settings, never a project's.
+    const modsEnabled = p.mods ?? previous.mods ?? false;
+    const modDirs = [];
+    if (modsEnabled) {
+      if (scope !== "user") fail("MODS_REQUIRE_USER_SCOPE");
+      if (platform === "codex") fail("MODS_REQUIRE_CLAUDE");
+      if (fs.existsSync(path.join(source, "mods")))
+        for (const name of fs.readdirSync(path.join(source, "mods")))
+          if (fs.existsSync(path.join(source, "mods", name, ".claude-plugin/plugin.json")))
+            modDirs.push(path.join(root, ".aget/plugin/mods", name));
+      const config = hostConfig(".claude/settings.json");
+      config.env ??= {};
+      const current = config.env.CLAUDE_CODE_PLUGIN_DIRS ?? "";
+      if (typeof config.env !== "object" || Array.isArray(config.env) || typeof current !== "string")
+        fail("INVALID_SETTINGS_ENV");
+      const stale = new Set(previous.modDirs ?? []);
+      const kept = current
+        .split(path.delimiter)
+        .filter((d) => d && !stale.has(d) && !modDirs.includes(d));
+      const value = [...kept, ...modDirs].join(path.delimiter);
+      if (value) config.env.CLAUDE_CODE_PLUGIN_DIRS = value;
+      else delete config.env.CLAUDE_CODE_PLUGIN_DIRS;
+    }
+    for (const [rel, { file, config }] of Object.entries(configs))
+      planned.push({
+        rel,
+        file,
+        data: Buffer.from(JSON.stringify(config, null, 2) + "\n"),
+        expected: hashFile(file),
+      });
     const removed = [];
     for (const [rel, hash] of Object.entries(previous.files || {}))
       if (!owned[rel]) {
@@ -315,6 +350,8 @@ export function setup(p) {
       platform,
       hooks: hooksEnabled,
       vault,
+      mods: modsEnabled,
+      modDirs,
       hookCommand: hooksEnabled
         ? hookCommand(
             process.execPath,
@@ -412,6 +449,7 @@ export function setup(p) {
       skills: skillDirs.length,
       platform,
       hooks: hooksEnabled,
+      mods: modDirs.map((d) => path.basename(d)),
     };
   });
 }

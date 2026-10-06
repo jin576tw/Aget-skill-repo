@@ -131,15 +131,12 @@ export function locked(root, fn) {
     fs.rmSync(lock, { recursive: true, force: true });
   }
 }
-export function workspaceInfo(value, legacy = false) {
-  const resolved = fs.realpathSync(value);
-  const windows = process.platform === "win32";
+function workspaceKey(resolved, windows, basename) {
   const normalized = (
-    windows || legacy ? resolved.replaceAll("/", "\\") : resolved
+    windows ? resolved.replaceAll("/", "\\") : resolved
   ).toLowerCase();
   const slug =
-    path
-      .basename(resolved)
+    basename
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "") || "workspace";
@@ -148,6 +145,24 @@ export function workspaceInfo(value, legacy = false) {
     normalized,
     prefix: slug + "--" + sha(normalized).slice(0, 8),
   };
+}
+export function workspaceInfo(value, legacy = false) {
+  const resolved = fs.realpathSync(value);
+  return workspaceKey(
+    resolved,
+    process.platform === "win32" || legacy,
+    path.basename(resolved),
+  );
+}
+// A handover written on another OS records a workspace this machine cannot
+// resolve; its key is computed from the recorded string as that OS did.
+export function foreignWorkspaceInfo(value) {
+  if (typeof value !== "string") return null;
+  const windows = /^[A-Za-z]:[\\/]/.test(value);
+  if (!windows && !path.posix.isAbsolute(value)) return null;
+  if (fs.existsSync(value)) return null;
+  const flavor = windows ? path.win32 : path.posix;
+  return { ...workspaceKey(value, windows, flavor.basename(value)), foreign: true };
 }
 export function slug(s) {
   if (typeof s !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s))
