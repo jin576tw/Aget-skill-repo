@@ -5,22 +5,28 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { setTimeout as delay } from "node:timers/promises";
 import { setup } from "../scripts/lib/setup.mjs";
 function target(t) {
   const tempRoot = process.platform === "win32"
     ? path.parse(os.tmpdir()).root
     : os.tmpdir();
   const dir = fs.mkdtempSync(path.join(tempRoot, "aget-setup-"));
-  t.after(() =>
-    fs.rmSync(dir, {
-      recursive: true,
-      force: true,
-      // Antivirus/indexing can briefly retain handles after copying the large
-      // document-skill trees or running a hook through cmd.exe.
-      maxRetries: process.platform === "win32" ? 20 : 0,
-      retryDelay: 250,
-    }),
-  );
+  t.after(async () => {
+    // Windows scanners can hold a nested directory after the first rimraf attempt.
+    // Retry the entire cleanup, including directories left by a partial removal.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        fs.rmSync(dir, { recursive: true, force: true });
+        return;
+      } catch (error) {
+        if (process.platform !== "win32" ||
+            !["EBUSY", "EPERM", "ENOTEMPTY"].includes(error.code) ||
+            attempt >= 30) throw error;
+        await delay(1000);
+      }
+    }
+  });
   return dir;
 }
 test("setup preserves user rules, installs tools, repeat check current", (t) => {
@@ -76,11 +82,18 @@ test("hooks are host-specific, repeated setup preserves unrelated hooks", (t) =>
   assert.ok(claude.hooks.Notification);
   assert.equal(codex.hooks.Notification, undefined);
   assert.ok(codex.hooks.Interrupt);
+  assert.equal(codex.hooks.Stop[0].hooks[0].timeout, 15);
   assert.equal(codex.hooks.SessionEnd[0].hooks[0].timeout, 3);
   assert.equal(claude.hooks.SessionStart.length, 1);
   assert.match(claude.hooks.SessionStart[0].hooks[0].command, /model-prompt-tune\.mjs/);
+  assert.equal(claude.hooks.SessionStart[0].hooks[0].timeout, 10);
   assert.equal(codex.hooks.UserPromptSubmit.length, 1);
   assert.match(codex.hooks.UserPromptSubmit[0].hooks[0].command, /model-prompt-tune\.mjs/);
+  assert.equal(codex.hooks.UserPromptSubmit[0].hooks[0].timeout, 10);
+  if (process.platform === "win32") {
+    assert.match(codex.hooks.UserPromptSubmit[0].hooks[0].commandWindows, /^node\.exe "/);
+    assert.match(codex.hooks.Stop[0].hooks[0].commandWindows, /^node\.exe "/);
+  }
 });
 test("hook vault argument is added once and kept on later setup", (t) => {
   const dir = target(t);

@@ -64,6 +64,12 @@ export function hookCommand(
   const quote = (s) => "'" + s.replaceAll("'", "'\"'\"'") + "'";
   return parts.map(quote).join(" ");
 }
+function codexWindowsCommand(script, args = []) {
+  // Codex may launch hooks through PowerShell, where a quoted executable path
+  // is a string expression rather than a command. Use the PATH-resolved binary.
+  const command = hookCommand(process.execPath, script, true, args);
+  return command.replace(/^"[^"]+" /, "node.exe ");
+}
 export function setup(p) {
   if (Number(process.versions.node.split(".")[0]) < 18)
     fail("NODE_18_REQUIRED");
@@ -262,7 +268,10 @@ export function setup(p) {
               {
                 type: "command",
                 command: cmd,
-                timeout: host === "codex" ? 3 : 15,
+                ...(host === "codex" && process.platform === "win32"
+                  ? { commandWindows: codexWindowsCommand(path.join(root, ".aget/plugin/hooks/record.mjs"), hookArgs) }
+                  : {}),
+                timeout: host === "codex" && event !== "Stop" ? 3 : 15,
               },
             ],
           });
@@ -283,7 +292,12 @@ export function setup(p) {
           }))
           .filter((entry) => entry.hooks?.length);
         config.hooks[tuneEvent].push({
-          hooks: [{ type: "command", command: tuneCmd, timeout: 3 }],
+          hooks: [{
+            type: "command", command: tuneCmd, timeout: 10,
+            ...(host === "codex" && process.platform === "win32"
+              ? { commandWindows: codexWindowsCommand(path.join(root, ".aget/plugin/hooks/model-prompt-tune.mjs")) }
+              : {}),
+          }],
         });
       }
     }
