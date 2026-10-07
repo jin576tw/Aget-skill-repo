@@ -50,8 +50,14 @@ async function main() {
   }
   fs.mkdirSync(stateDir, { recursive: true });
   const tempFile = `${stateFile}.${process.pid}.tmp`;
-  fs.writeFileSync(tempFile, input.model, { mode: 0o600 });
-  fs.renameSync(tempFile, stateFile);
+  try {
+    fs.writeFileSync(tempFile, input.model, { mode: 0o600 });
+    fs.renameSync(tempFile, stateFile);
+  } catch (error) {
+    // Failed replacement must not leave model state fragments behind.
+    try { fs.rmSync(tempFile, { force: true }); } catch { /* Cleanup is best effort. */ }
+    throw error;
+  }
   emit("UserPromptSubmit", `目前模型 ${input.model}：${directive(profile, tiers)}`);
 }
 

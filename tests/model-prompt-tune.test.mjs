@@ -77,3 +77,79 @@ test("target-model prompt renderer uses the same profiles", () => {
   assert.match(run("gpt-5.6-luna").stdout, /任務目標/);
   assert.equal(run("gpt-7-unknown").stdout, "");
 });
+
+function hookFixture(t) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aget-model-edge-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const state = path.join(dir, "state");
+  const base = { hook_event_name: "UserPromptSubmit", session_id: "session123", model: "gpt-6-sol" };
+  const run = (input = base, args = []) => spawnSync(process.execPath,
+    [...args, path.join(root, "hooks/model-prompt-tune.mjs")], {
+      input: JSON.stringify(input), encoding: "utf8",
+      env: { ...process.env, AGET_MODEL_TUNE_STATE_DIR: state },
+    });
+  return { dir, state, base, run };
+}
+
+function silent(result) {
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, "");
+}
+
+test("invalid inputs and unsupported events never create model state", (t) => {
+  const { state, base, run } = hookFixture(t);
+  for (const input of [null, [], 1, "text", {},
+    { ...base, hook_event_name: "Stop" },
+    { ...base, model: null }, { ...base, model: "claude-sonnet-5" },
+    { ...base, model: "gpt-6-sol-extra" },
+    ...[null, 123, "short", "../session123", "session/123", "a".repeat(129)]
+      .map((session_id) => ({ ...base, session_id })),
+  ]) silent(run(input));
+  assert.equal(fs.existsSync(state), false);
+});
+
+test("model state is isolated by session and unknown models reset only their session", (t) => {
+  const { state, base, run } = hookFixture(t);
+  const other = { ...base, session_id: "session456", model: "gpt-6-luna" };
+  assert.ok(run().stdout);
+  assert.ok(run(other).stdout);
+  silent(run());
+  silent(run(other));
+  silent(run({ ...base, model: "model-not-listed" }));
+  assert.equal(fs.existsSync(path.join(state, base.session_id)), false);
+  assert.equal(fs.readFileSync(path.join(state, other.session_id), "utf8"), other.model);
+  silent(run(other));
+  assert.ok(run().stdout);
+  assert.deepEqual(fs.readdirSync(state).sort(), [base.session_id, other.session_id]);
+});
+
+test("state read and directory creation failures stay silent and recover on retry", (t) => {
+  const { state, base, run } = hookFixture(t);
+  fs.writeFileSync(state, "blocked directory");
+  silent(run());
+  assert.equal(fs.readFileSync(state, "utf8"), "blocked directory");
+  fs.unlinkSync(state);
+  fs.mkdirSync(path.join(state, base.session_id), { recursive: true });
+  silent(run());
+  fs.rmdirSync(path.join(state, base.session_id));
+  assert.ok(run().stdout);
+  silent(run());
+});
+
+test("failed state replacement preserves previous model and removes temporary files", (t) => {
+  const { dir, state, base, run } = hookFixture(t);
+  assert.ok(run().stdout);
+  // Model a filesystem denying rename (e.g. a Windows file held open),
+  // without depending on chmod behavior or host-specific file locking.
+  const fault = path.join(dir, "deny-rename.cjs");
+  fs.writeFileSync(fault, `const fs = require("node:fs");
+fs.renameSync = () => { throw Object.assign(new Error("rename denied"), { code: "EACCES" }); };
+`);
+  const changed = { ...base, model: "gpt-6-luna" };
+  silent(run(changed, ["--require", fault]));
+  assert.equal(fs.readFileSync(path.join(state, base.session_id), "utf8"), base.model);
+  assert.deepEqual(fs.readdirSync(state), [base.session_id]);
+  assert.match(run(changed).stdout, /gpt-6-luna/);
+  silent(run(changed));
+});
