@@ -1,0 +1,33 @@
+{
+  "host": "codex-cli 0.154.0",
+  "login": "ChatGPT",
+  "runs": [
+    {
+      "model": "gpt-6.1-sol",
+      "startedAt": "2026-10-10T04:17:38.668968+00:00",
+      "exit": 1,
+      "threadId": "01a12407-e8a8-7242-bfba-97cd193b3210",
+      "statePresent": false,
+      "state": null,
+      "result": "HTTP 400: model not supported when using Codex with a ChatGPT account"
+    },
+    {
+      "model": "gpt-6-sol",
+      "startedAt": "2026-10-10T04:17:46.394614+00:00",
+      "exit": 1,
+      "threadId": "01a12407-fff7-7bf2-b418-89fc8e793d4a",
+      "statePresent": false,
+      "state": null,
+      "result": "HTTP 400: model not supported when using Codex with a ChatGPT account"
+    },
+    {
+      "model": "gpt-6-luna",
+      "startedAt": "2026-10-10T04:17:53.093343+00:00",
+      "exit": 1,
+      "threadId": "01a12408-1a22-7981-b963-e511218cbb4d",
+      "statePresent": false,
+      "state": null,
+      "result": "HTTP 400: model not supported when using Codex with a ChatGPT account"
+    }
+  ]
+}
