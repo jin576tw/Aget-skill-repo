@@ -32,7 +32,7 @@ board 更新前讀最新內容與 expected hash；若更新介面會取代整段
 
 ## 派工配置：模型與 effort
 
-COORD 依模型指引實際指派，不只給建議：每個任務先選定一組「模型＋effort＋理由」，確認有相符模型的 session 後才記 claim 並派工；沒有相符 session 時，該任務列為待開 session 或待切換模型，告訴使用者需要什麼。選擇寫進派工內容與該任務 progress，不寫進 `Claim-ID`。
+COORD 依模型指引實際指派模型：每個任務先選定一組「模型＋建議 effort＋理由」，確認有相符模型的 session 後才記 claim 並派工（effort 不列為派工前提）；沒有相符 session 時，該任務列為待開 session 或待切換模型，告訴使用者需要什麼。選擇寫進派工內容與該任務 progress，不寫進 `Claim-ID`。
 
 - **來源**：派工前以 UTF-8 讀 Aget 的 `rules/model-profiles.json`（可用 `node scripts/model-prompt.mjs <model-id>` 取該模型的精簡指令；PowerShell 5.1 讀檔要加 `-Encoding UTF8`），取目標模型的 tier 與 directives；不要從記憶推定，也不要複製成固定路由表。檔案找不到或沒有該模型時，說明缺口並用 tier 描述配置。
 - **契約優先**：任務契約的 Model 欄是預設；COORD 依風險調整時，在 progress 記理由。
@@ -40,9 +40,9 @@ COORD 依模型指引實際指派，不只給建議：每個任務先選定一�
   - efficient（如 Haiku）：步驟、輸入與完成標準都明確，以執行指令、蒐集輸出、整理資訊為主。
   - balanced（如 Sonnet）：範圍明確的實作、撰寫或執行測試、需要多步驗證；不需架構或安全判斷。
   - frontier（如 Opus）：安全／架構判斷、多檔因果分析、高不確定性，或最終裁定與報告。
-- **選 effort**：照 board 任務的 effort 欄位或該任務契約；沒寫時依難度給 low／medium／high／xhigh，並遵守該模型的 directives（例如某些模型不支援 effort，就改以提示控制深度；只有 Opus 系列才考慮 xhigh 起步）。只有使用者或專案契約明確要求時才用 max。
+- **選 effort（僅建議）**：effort 是給使用者的建議值，不強制、不阻擋派工；實際以使用者在執行 session 的設定為準，board progress 標註「建議 X，依使用者設定執行」。建議值照 board 任務的 effort 欄位或該任務契約；沒寫時依難度給 low／medium／high／xhigh，並遵守該模型的 directives（例如某些模型不支援 effort，就改以提示控制深度；只有 Opus 系列才考慮 xhigh 起步）。只有使用者或專案契約明確要求時才用 max。
 - **派工訊息**：依目標模型的格式寫。efficient tier 用「任務目標／輸入與範圍／明確規則／步驟／完成標準／不做的事」；其他 tier 給完整目標、完成標準與限制即可。附上該模型的 directives 精簡句。
-- **既有 session**：要沿用某個 session 時，先確認它目前用的模型；不相符時請使用者用 `/model` 切換或開新 session，不要假設已切換。effort 由使用者在該 session 設定，COORD 給出指定值並請使用者確認已設定。宿主能直接啟動執行者（subagent、workflow）時，COORD 直接以選定的模型與 effort 啟動。
+- **既有 session**：要沿用某個 session 時，先確認它目前用的模型；不相符時請使用者用 `/model` 切換或開新 session，不要假設已切換。effort 由使用者在該 session 設定，COORD 只提供建議值，不要求切換或確認，執行者以目前設定直接開工。宿主能直接啟動執行者（subagent、workflow）時，COORD 以選定模型啟動，effort 用使用者指定值，未指定才用建議值。
 - **調整**：執行者因能力不足失敗、或同根因再現時，升一級 tier 重派，並把原因記在 progress。
 
 ## 退場

@@ -170,7 +170,7 @@ export function slug(s) {
   return s;
 }
 export function jsonInput() {
-  return JSON.parse(fs.readFileSync(0, "utf8"));
+  return JSON.parse(fs.readFileSync(0, "utf8").replace(/^﻿/, ""));
 }
 export function cli(fn) {
   try {
