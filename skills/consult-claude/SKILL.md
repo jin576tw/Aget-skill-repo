@@ -45,6 +45,8 @@ Codex 是協調者、驗證者與最終決策者；Claude 是外部顧問。Clau
 | second-opinion | 快速第二意見、小型 trade-off、命名、簡單檢查 | `sonnet` + `medium`（深度問題改 opus/high） |
 | implement | 僅在使用者明確要求「讓 Claude 修改／implement」時 | 依任務 |
 
+**版本優先**：`opus`／`sonnet` 是指向該系列最新版的別名；需要固定版本時，從 [model-profiles.json](../../rules/model-profiles.json) 選同系列最新的模型 ID。最新版不可用時改用同系列下一個較舊版本重試一次，並在回報寫明原選模型、錯誤與實際使用模型。
+
 ### Effort（與模型分開判斷）
 
 `--effort` 可選 `low`／`medium`／`high`／`xhigh`／`max`。模型決定能力；effort 決定單次推理深度，兩者獨立選：小範圍但推理刁鑽可用 `sonnet` + `high`；大範圍但只需逐項核對可用 `opus` + `medium`。
@@ -83,7 +85,7 @@ Codex 是協調者、驗證者與最終決策者；Claude 是外部顧問。Clau
    - 唯讀（預設）：`--tools "Read,Glob,Grep"`，Claude 沒有 Bash／Edit，無法改檔也無法呼叫 codex。需要讀 repo 時在該 repo 目錄執行，或加 `--add-dir <path>`。
    - 回應可能需要數分鐘；設定足夠的 timeout。
    - 若 Codex 本身跑在沙箱（例如 `codex exec -s workspace-write`），`claude` 可能讀不到憑證而回 `Not logged in`。這是沙箱限制，不是未登入；回報時一併說明需在未沙箱或 full-access 的 session 重試。
-5. **失敗處理**：保留 exit status、stderr 與關鍵錯誤，分類為 authentication、model unavailable、permission、invalid argument、CLI unavailable 或 timeout 後回報。不得 silent fallback 成 Codex 自己回答並冠上 Claude 名義。模型不可用時：回報錯誤；使用者允許才換模型；使用者要求必須 Opus 則停止委派。
+5. **失敗處理**：保留 exit status、stderr 與關鍵錯誤，分類為 authentication、model unavailable、permission、invalid argument、CLI unavailable 或 timeout 後回報。不得 silent fallback 成 Codex 自己回答並冠上 Claude 名義。模型不可用時：回報錯誤；除「版本優先」的同系列較舊版本退階外，使用者允許才換模型；使用者要求必須 Opus 則停止委派。
 6. **驗證**：對 Claude 的每個重要主張，對照原始碼、測試、文件、實際執行或需求判斷成立、不成立或無法驗證。debug 假設在有證據前不是 root cause。
 7. **輸出**：依情況精簡或完整使用下列格式，明確區分 Claude 原意見與 Codex 判斷：
 

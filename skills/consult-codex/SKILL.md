@@ -78,7 +78,7 @@ Claude Code 是協調者、路由者、驗證者與最終決策者；Codex 是�
    - 唯讀（預設）：`-s read-only`，Codex 不能改檔。`-C` 指向要審查的 repo；非 git 目錄加 `--skip-git-repo-check`。
    - `-o` 只存最終回答；完整過程與錯誤在 `.log`。
    - 回應可能需要數分鐘，Bash timeout 設足（例如 600000 ms）或背景執行。
-6. **失敗處理**：保留 exit status 與 log 關鍵錯誤，分類為 authentication、model unavailable、permission／sandbox、invalid argument、CLI unavailable 或 timeout 後回報。不得 silent fallback 成 Claude 自己回答並冠上 Codex 名義；模型不可用時回報，使用者允許才換模型。
+6. **失敗處理**：保留 exit status 與 log 關鍵錯誤，分類為 authentication、model unavailable、permission／sandbox、invalid argument、CLI unavailable 或 timeout 後回報。不得 silent fallback 成 Claude 自己回答並冠上 Codex 名義；模型不可用時回報，使用者允許才換模型；例外是 [model-routing](references/model-routing.md)「版本優先」的同類較舊版本退階。
 7. **驗證**：對 Codex 的每個重要主張，對照原始碼、測試、文件、實際執行或需求判斷成立、不成立或無法驗證。debug 假設在有證據前不是 root cause。
 8. **輸出**：依情況精簡或完整使用下列格式，明確區分 Codex 原意見與 Claude 判斷：
 

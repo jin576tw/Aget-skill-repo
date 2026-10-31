@@ -9,6 +9,8 @@
 - 架構、多系統、重大風險、原因高度不明：選 Sol 或 GPT-6 Astra。
 - 使用者指定模型時維持指定模型；模型不可用時回報，不自行替換。
 
+**版本優先**：同等級候選中，從 model-profiles.json 選最新版本（例如 gpt-6.1 → gpt-6 → gpt-5.6）。若 CLI 回 `model_not_found`／not supported，改用下一個較舊版本的同類模型重試一次，並在回報寫明「原選模型、錯誤、實際使用模型」；這是使用者已同意的版本退階，不是換成 Claude 自答。
+
 推理等級獨立判斷：明確工作從 medium 起，需追蹤多步因果或高風險時升 high／xhigh；GPT-6 Luna 可從 high 起。實際支援等級以模型選單與 CLI 為準。
 
 ## 組 prompt
