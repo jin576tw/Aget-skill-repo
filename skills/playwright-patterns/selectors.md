@@ -5,7 +5,7 @@
 ### 1. ARIA Role (Best)
 ```typescript
 page.getByRole('button', { name: '查詢' })
-page.getByRole('textbox', { name: '保單號碼' })
+page.getByRole('textbox', { name: '項目編號' })
 page.getByRole('checkbox', { name: '全選' })
 page.getByRole('link', { name: '詳情' })
 page.getByRole('heading', { name: '查詢結果' })
@@ -14,12 +14,12 @@ page.getByRole('heading', { name: '查詢結果' })
 ### 2. Form Label
 ```typescript
 page.getByLabel('受理日期起')
-page.getByLabel('保單號碼')
+page.getByLabel('項目編號')
 ```
 
 ### 3. Placeholder
 ```typescript
-page.getByPlaceholder('請輸入保單號碼')
+page.getByPlaceholder('請輸入項目編號')
 page.getByPlaceholder('請選擇')
 ```
 

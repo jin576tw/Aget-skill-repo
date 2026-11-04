@@ -2,11 +2,11 @@
 
 ## 零、學習者程度設定
 
-**目標對象**：完全沒有 Java 背景、正在學習 adp-policy 程式碼的保險業務人員。
+**目標對象**：完全沒有 Java 背景、正在學習目前專案程式碼的讀者。
 
 **解說原則**：
 - 禁止直接使用 Java 術語，**每個術語必須附白話括弧**，例如：「Annotation（標記）」
-- 比喻優先：辦公室、信封、翻譯員、收發室等保險業熟悉的場景
+- 比喻優先：辦公室、信封、翻譯員、收發室等讀者熟悉的場景
 - 粒度：以「段落」為單位（每個 method 一段），不逐行翻譯語法
 - 長度控制：單一方法說明不超過 5 句；整個 class 解說不超過 400 字（複雜類別除外）
 - 每次解說結尾**必須**附上「理解確認題」（見第六節）
@@ -61,9 +61,9 @@
 
 **角色**：[角色名稱]（[白話說明]）
 
-**一句話總結**：[用保險業務語言描述這個類別做什麼]
+**一句話總結**：[用讀者熟悉的語言描述這個類別做什麼]
 
-**對應業務文件**：[adp-knowledge 路徑，或「尚未分析」]
+**對應業務文件**：[目前專案已核實的文件路徑，或「尚未分析」]
 
 ---
 
@@ -90,56 +90,56 @@
 
 ---
 
-## 四、範例：ReceiptController 解說
+## 四、範例：ReportController 解說
 
 ```
-## ReceiptController 解說
+## ReportController 解說
 
 **角色**：收發室（負責接收前端請求、送出回應）
 
-**一句話總結**：接收前端發來的「列印收據」、「查詢收據」等請求，轉交給 ReceiptService
+**一句話總結**：接收前端發來的「列印報表」、「查詢報表」等請求，轉交給 ReportService
 處理，再把結果送回前端。
 
 **對應業務文件**：
-`adp-knowledge/收據作業/收據管理作業/收據列印管理/FLOWCHART.md`
+`docs/report-flow.md`（假設範例，實際使用時須核實）
 
 ---
 
 ### 各方法說明
 
-**printReceipt()**
+**printReport()**
 - 觸發時機：使用者在畫面上點「列印」按鈕
-- 做了什麼：把前端送來的收據編號交給 ReceiptService，ReceiptService 去資料庫找資料後回傳
-- 回傳什麼：收據資料（PDF 路徑或收據內容）
+- 做了什麼：把前端送來的報表編號交給 ReportService，ReportService 去資料庫找資料後回傳
+- 回傳什麼：報表資料（PDF 路徑或報表內容）
 
-**queryReceipt()**
+**queryReport()**
 - 觸發時機：使用者輸入查詢條件後按「查詢」
-- 做了什麼：把查詢條件（日期範圍、保單號碼等）傳給 Service，取回符合條件的收據清單
-- 回傳什麼：收據清單
+- 做了什麼：把查詢條件（日期範圍、項目編號等）傳給 Service，取回符合條件的報表清單
+- 回傳什麼：報表清單
 
 ---
 
 ### 下一步建議
 
 學完這個類別後，建議接著看：
-- `receipt/service/ReceiptService.java` — 業務員，真正決定收據怎麼組出來的地方
+- `report/service/ReportService.java` — 業務員，真正決定報表怎麼組出來的地方
 
 ---
 
 ### ✏️ 理解確認題（請回答後我會批改）
 
-Q1. ReceiptController 這個 class 的角色是什麼？它自己會去資料庫撈資料嗎？
+Q1. ReportController 這個 class 的角色是什麼？它自己會去資料庫撈資料嗎？
 
-Q2. `printReceipt()` 前面如果有 `@Override`，代表什麼意思？
+Q2. `printReport()` 前面如果有 `@Override`，代表什麼意思？
 
-Q3. 如果今天要改「列印收據的格式」，你覺得應該改 Controller 還是 Service？為什麼？
+Q3. 如果今天要改「列印報表的格式」，你覺得應該改 Controller 還是 Service？為什麼？
 ```
 
 ---
 
 ## 五、學習路線建議
 
-### 適合初學者的學習順序（以「核保審核」為例）
+### 適合初學者的學習順序（以「報表查詢」為例）
 
 ```
 1. FLOWCHART.md（業務流程圖）
@@ -155,7 +155,7 @@ Q3. 如果今天要改「列印收據的格式」，你覺得應該改 Controlle
 
 ### 常見 Java 概念學習對應
 
-| 想理解的概念 | 在 adp-policy 看哪裡 |
+| 想理解的概念 | 在目前專案查找的位置（依實際目錄調整） |
 |---|---|
 | 什麼是 Spring Boot | `common/config/` 下的 Config 類別 |
 | 什麼是依賴注入 | 任何 Service 的建構子（`@RequiredArgsConstructor`）|
@@ -164,7 +164,7 @@ Q3. 如果今天要改「列印收據的格式」，你覺得應該改 Controlle
 | 什麼是例外處理 | `common/exception/` 或 Service 中的 try-catch |
 | 什麼是 DTO 模式 | `*Cmd.java`、`*Vo.java`、`*Dto.java` |
 | 什麼是 interface / implements | 任何 `implements XxxApi` 的 Controller |
-| 什麼是 Drools 規則引擎 | `resources/rules/gi/nb/insured/nb-insured.drl` |
+| 什麼是 Drools 規則引擎 | 專案實際使用的 `.drl` 檔（未使用 Drools 則略過） |
 | 什麼是串流操作 stream() | Controller 或 Service 中的 `.stream().filter().map()` |
 
 ---

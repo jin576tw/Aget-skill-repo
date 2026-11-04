@@ -70,8 +70,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 ```
 
 若專案另有「難字」/罕見字擴充字型需求（例如姓名罕見字），那是另一套 FontFace API +
-外部字型伺服器降級的機制，屬於專案特定規範，不在本 skill 範圍內（core-ui 專案見
-`.github/instructions/pdf-worker.instructions.md`）。
+外部字型伺服器降級的機制，屬於專案特定規範，依目前專案的字型載入規範處理，不假設存在固定的指引路徑。
 
 ### 3. 包成 Angular Web Worker
 
@@ -96,7 +95,7 @@ addEventListener('message', async ({ data }) => {
   通常只有 `es2018`/`webworker`（**沒有 `dom`**）——worker 內不能用 `document`/`window`
   等 DOM 全域，共用的純函式 util 檔也要避免依賴 DOM。
 - 主執行緒啟動 worker、顯示進度、觸發下載，通常包在一個共用對話框元件裡
-  （例如 core-ui 的 `ProgressBoxComponent`：傳入 `workerFactory`、監聽
+  （傳入 `workerFactory`、監聽
   `postMessage` 回報的 `progress`/`url`，`url` 有值時啟用下載按鈕），
   不要在每個呼叫點各自 `new Worker()` 重複接線邏輯。
 

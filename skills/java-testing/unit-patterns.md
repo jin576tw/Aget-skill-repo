@@ -21,7 +21,7 @@ class FooServiceTest {
 - 金額計算、日期推算、商業規則判斷
 - DTO → Command / Domain model 轉換
 - 狀態機轉換、錯誤碼對應
-- null / 空 List 的防禦行為（如本次 ADPSITUAT-4799）
+- null / 空 List 的防禦行為
 - Controller VR 驗證邏輯（不啟動 Spring context，直接呼叫 controller method）
 
 ## 測試骨架

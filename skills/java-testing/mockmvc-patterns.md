@@ -16,7 +16,7 @@
 
 **原則**：Bug fix 驗證優先用 `@WebMvcTest`；若涉及多層 service 互動才升級到 `@SpringBootTest`。
 
-⚠️ **先確認專案測試風格**：部分專案（如 adp-policy）所有 `@SpringBootTest` 均 `@Disabled`（需完整 DB/Redis 環境），單元測試統一純 Mockito——這類專案**不應新增**未 `@Disabled` 的 `@SpringBootTest` 測試。動工前先看既有測試目錄的慣例。
+⚠️ **先確認專案測試風格**：部分專案所有 `@SpringBootTest` 均 `@Disabled`（需完整 DB/Redis 環境），單元測試統一純 Mockito——這類專案**不應新增**未 `@Disabled` 的 `@SpringBootTest` 測試。動工前先看既有測試目錄的慣例。
 
 ## `@MockitoBean` 取代 `@MockBean`（Spring Boot 3.4+）
 

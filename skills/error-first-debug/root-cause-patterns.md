@@ -6,13 +6,13 @@
 
 **回追法**：優先找該欄位的 setter 呼叫鏈——`prepareXxxCmd()` → `toXxxCmd()` → DTO 來源，逐層確認哪一層未賦值。
 
-**已知案例模式**：欄位賦值三行必須連續（`setInsuranceAge → toXxxCmd → setAge`），被其他設定程式碼分隔後，規則引擎觸發時取到 null。Rebase 解衝突時若 ours/theirs 各有一行對同名欄位的 `setXxx()`，先判斷是否針對**不同物件**——是則兩行都保留，順序以業務邏輯連續性為優先，不以行數為優先。
+**檢查資料依賴順序**：先賦值來源欄位，再轉換 DTO，最後交給規則引擎；若轉換時來源尚未賦值，目標欄位可能仍為 null。具體順序依實際呼叫鏈確認。Rebase 解衝突時若 ours/theirs 各有一行對同名欄位的 `setXxx()`，先判斷是否針對**不同物件**——是則兩行都保留，順序以業務邏輯連續性為優先，不以行數為優先。
 
 ## Drools 規則 NPE 特殊性
 
 Drools 在 rule fire 時的 NPE stack trace **通常不含業務方法名**（只有 rule file/line）。診斷流程：
 
-1. 先找到 rule 文字（如 `getAge().intValue()`）
+1. 先找到 rule 文字（如 `getValue().intValue()`）
 2. 回推 Java 呼叫端的 `prepareXxxCmd()` / cmd 組裝處
 3. 確認欄位賦值時機是否在 rule fire 之前
 
@@ -27,7 +27,7 @@ YearMonth ym = YearMonth.from(current).plusMonths(n);
 LocalDate next = ym.atDay(Math.min(originalDay, ym.lengthOfMonth()));
 ```
 
-day 永遠錨定**原始日**（originalPayDate.getDayOfMonth()），只有月份前進。適用所有涉及月份加減的應繳日/保費計算場景。若專案已封裝共用轉換工具（如 `nextPayDateConverter` / `prevPayDateConverter`），優先重用，不重造。
+day 永遠錨定**原始日**（originalDate.getDayOfMonth()），只有月份前進。適用所有涉及月份加減的週期日期計算場景。若專案已封裝共用轉換工具，優先重用，不重造。
 
 ## LocalDateTime vs LocalDate 轉換
 

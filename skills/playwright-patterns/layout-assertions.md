@@ -113,7 +113,7 @@ test.describe('AC-XX — table 容器 overflow 驗證', () => {
         }),
       })
     );
-    await page.goto('http://localhost:4200/core-ui/target-route');
+    await page.goto('http://localhost:4200/target-route');
     await page.waitForLoadState('networkidle');
   });
 

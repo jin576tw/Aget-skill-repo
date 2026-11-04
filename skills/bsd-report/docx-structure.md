@@ -77,7 +77,7 @@
 
 ### 標題段落
 
-替換 `{TICKET}`（完整票號，如 `BMPPCORE-280`、`BMPPOS-20`）。
+替換 `{TICKET}`（完整票號，如 `DEMO-101`、`DEMO-102`）。
 
 ```xml
 <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="新細明體" w:eastAsia="新細明體" w:hAnsi="新細明體"/><w:sz w:val="32"/></w:rPr><w:t>{TICKET}_BSD文件</w:t></w:r></w:p>
