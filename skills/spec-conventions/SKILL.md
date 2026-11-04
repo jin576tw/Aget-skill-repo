@@ -17,4 +17,4 @@ description: 撰寫或維護可驗證、可追溯的需求／規格，與已核�
 
 [EARS 表達](ears-syntax.md)、[範本](templates.md) 按需使用；現有專案格式優先。
 
-撰寫或維護 SA 文件時，另讀 [SA 寫作指引](sa-writing.md)；依讀者與專案既有規範調整。
+撰寫或維護 SA 文件時，先讀 [SA 寫作指引](sa-writing.md)：預設沿用 ESP postmail 的章節、畫面／UC 物件與表格結構；使用者或目標專案另有明確格式時優先採用。
