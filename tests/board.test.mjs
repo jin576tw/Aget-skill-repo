@@ -246,3 +246,14 @@ test("update keeps earlier progress as history without changing the contract", (
   assert.equal(board({ ...p, action: "hash", task: "A" }).computed, hash);
   assert.equal(board({ ...p, action: "validate" }).signal, "PLAN_BOARD_VALID");
 });
+test("tasks expose optional Model and Effort; legacy boards return null", (t) => {
+  const { p } = waveFixture(t, [
+    { id: "A", extra: free("NONE") + "- Model: claude-sonnet-5-5（balanced）\n- Effort: medium\n" },
+    { id: "B", extra: free("NONE") },
+  ]);
+  const [a, b] = board({ ...p, action: "validate" }).tasks;
+  assert.equal(a.model, "claude-sonnet-5-5（balanced）");
+  assert.equal(a.effort, "medium");
+  assert.equal(b.model, null);
+  assert.equal(b.effort, null);
+});

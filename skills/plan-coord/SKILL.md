@@ -35,7 +35,8 @@ board 更新前讀最新內容與 expected hash；若更新介面會取代整段
 COORD 依模型指引實際指派模型：每個任務先選定一組「模型＋建議 effort＋理由」，確認有相符模型的 session 後才記 claim 並派工（effort 不列為派工前提）；沒有相符 session 時，該任務列為待開 session 或待切換模型，告訴使用者需要什麼。選擇寫進派工內容與該任務 progress，不寫進 `Claim-ID`。
 
 - **來源**：派工前以 UTF-8 讀 Aget 的 `rules/model-profiles.json`（可用 `node scripts/model-prompt.mjs <model-id>` 取該模型的精簡指令；PowerShell 5.1 讀檔要加 `-Encoding UTF8`），取目標模型的 tier 與 directives；不要從記憶推定，也不要複製成固定路由表。檔案找不到或沒有該模型時，說明缺口並用 tier 描述配置。
-- **契約優先**：任務契約的 Model 欄是預設；COORD 依風險調整時，在 progress 記理由。
+- **寫入 board**：建立 board 時，每個任務的 contract 都要填 `Model`（模型 id 或 tier 加一句理由）與 `Effort`（建議值）；status／validate 會回傳這兩個值，回報使用者時一併列出。
+- **契約優先**：任務契約的 `Model`／`Effort` 欄是預設；COORD 依風險調整時，在 progress 記理由。
 - **選 tier**：
   - efficient（如 Haiku）：步驟、輸入與完成標準都明確，以執行指令、蒐集輸出、整理資訊為主。
   - balanced（如 Sonnet）：範圍明確的實作、撰寫或執行測試、需要多步驗證；不需架構或安全判斷。

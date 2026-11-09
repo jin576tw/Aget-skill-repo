@@ -44,6 +44,8 @@
 - Resources: <exclusive files, working tree or environment, comma-separated; NONE if read-only>
 - Sign-off: <none, or who must decide/approve during or before completion>
 - Stop: <conditions that halt the task and return it to COORD, e.g. same root cause twice>
+- Model: <model id or tier plus one-line reason, e.g. claude-sonnet-5-5（balanced：範圍明確的實作與測試）>
+- Effort: <suggested low|medium|high|xhigh|max, or n/a when the model has no effort parameter；依使用者設定執行>
 <!-- START-PLAN:CONTRACT:IMPLEMENT:END -->
 <!-- START-PLAN:PROGRESS:IMPLEMENT:BEGIN -->
 - Summary: 尚未開始
@@ -52,7 +54,11 @@
 <!-- START-PLAN:TASK:IMPLEMENT:END -->
 ```
 
-`Resources`、`Sign-off`、`Stop` 為選填，寫在 contract 內，因此鎖定後同受 hash 保護。status 只把 ready、依賴完成、`Sign-off: none`、`Resources` 已宣告且未與進行中或同波任務重疊的任務列入 `wave_candidates`；缺欄位視為未知而不入波，原因列在 `wave_excluded`。是否跨多次 checkpoint、能否隔離仍由 COORD 判斷。計畫完成條件與協調規則位於 contract 外，變更時在 progress 留紀錄。
+`Resources`、`Sign-off`、`Stop`、`Model`、`Effort` 為選填，寫在 contract 內，因此鎖定後同受 hash 保護。
+
+- `Model`、`Effort` 是 COORD 依 plan-coord「派工配置」選定的預設，status／validate 的 tasks 會回傳 `model`、`effort`，未填為 `null`。
+- 新 board 每個任務都應填寫這兩個欄位。舊 board 缺欄可讀，不為補欄而重寫 locked contract；需要時以 progress 記錄配置。
+- `Effort` 是建議值，不阻擋派工；實際採用的模型、effort 與調整理由記在 progress。status 只把 ready、依賴完成、`Sign-off: none`、`Resources` 已宣告且未與進行中或同波任務重疊的任務列入 `wave_candidates`；缺欄位視為未知而不入波，原因列在 `wave_excluded`。是否跨多次 checkpoint、能否隔離仍由 COORD 判斷。計畫完成條件與協調規則位於 contract 外，變更時在 progress 留紀錄。
 
 update 會把舊 progress 壓成一行移入 `- History:`（新到舊），不再覆蓋先前證據。
 

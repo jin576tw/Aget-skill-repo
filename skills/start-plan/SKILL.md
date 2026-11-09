@@ -11,7 +11,7 @@ description: 為跨 session、共享依賴或多項交付建立可接續計畫�
 
 ## 驗收
 
-每項目標有交付與驗收依據；交給執行者時按 [Execution Brief](../start-work/references/execution-brief.md) 提供範圍、不可改行為、Context、AC、驗證與 Done，可引用既有 spec。依賴指向既有任務且無循環。保留已確認約束；Worker、模型、回合及 session 數不作通用必填。跨任務整合證據不能由單項驗收產生時才增加整合目標，不固定 INTEGRATION 角色。
+每項目標有交付與驗收依據；交給執行者時按 [Execution Brief](../start-work/references/execution-brief.md) 提供範圍、不可改行為、Context、AC、驗證與 Done，可引用既有 spec。依賴指向既有任務且無循環。保留已確認約束。持久共享 board 的每個任務都要在 contract 填 `Model`（模型或 tier 加一句理由）與 `Effort`（建議值），讓使用者和執行者在派工前就看得到配置；選法依 plan-coord「派工配置」與 `rules/model-profiles.json`。簡單計畫、Worker、回合及 session 數不作通用必填。跨任務整合證據不能由單項驗收產生時才增加整合目標，不固定 INTEGRATION 角色。
 
 每項任務有穩定 task-id，每次認領有唯一 claim-id；session 顯示名稱只是可變標籤，不是身分主鍵，不能單獨用來判定 owner、claim 或「這是不是同一個 session」——顯示名稱可能在執行中被環境重新產生，這不代表任務被重新認領或出現新 session。認領前先讀最新 board 確認該 task-id 沒有其他 active claim；若本次起手指令與另一個 active session 相同，暫停共享 artifact 寫入，交由協調者（COORD／控場者）去重，不要因顯示名稱不同就推定是不同執行者，也不要自行判定並繼續動手。多 session 共用同一 board 時，協調者的完整操作程序（重複認領偵測、身分重新核對、依賴/資源互斥、獨立證據驗證）見專案若有提供的 COORD 類 skill；本檔只定義任務與計畫本身的結構。
 

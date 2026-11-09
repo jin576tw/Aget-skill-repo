@@ -116,6 +116,9 @@ export function parseBoard(input, workspace) {
               .map((s) => s.trim().replace(/^`|`$/g, ""))
               .filter(Boolean);
     r.signOff = field(r.contract.body, "Sign-off", true);
+    // Optional dispatch hints: COORD's chosen model and suggested effort; null means not yet assigned.
+    r.model = field(r.contract.body, "Model", true);
+    r.effort = field(r.contract.body, "Effort", true);
   }
   const visit = (r, trail = new Set()) => {
     if (trail.has(r.task)) fail("DEPENDENCY_CYCLE");
