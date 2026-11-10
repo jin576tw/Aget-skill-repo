@@ -49,3 +49,27 @@ COORD 依模型指引實際指派模型：每個任務先選定一組「模型�
 ## 退場
 
 逐一核對終態、active／orphan claim、共用輸出與目前版本的驗證證據。保留尚存風險、未重跑項目與身分異動紀錄；需要跨 session 接續或結案時依 handover／finalize 契約處理。不能以執行者或 reviewer 的文字結論單獨標記完成。
+
+## 任務 session 先啟動：待命登記
+
+支援先啟動任務 session、準備完成並待命，再啟動 COORD。任務 session 讀完指定任務契約後，立即在 board 的 `Session Registry` 區登記 Plan-ID、Task-ID、宿主、可供宿主定位的 session id／record-id、目前模型、`standby` 與更新時間；顯示名稱僅供輔助。session id 是工具路由識別，不可填登入 session、cookie 或 token。只能使用宿主實際提供的 id，不可猜測；取不到時填 `unavailable` 並向使用者回報定位缺口。
+
+登記是協調 metadata，不是 claim：保留任務 ready、原 Claim-ID、依賴及 contract hash，不取得資源、不開始實作。依賴未完成仍可登記待命。回報「Task-ID／session id／已登記待命，等待 COORD 放行」。同 task 可保留多個候選 session，不能覆蓋他人紀錄。
+
+登記區放在所有 TASK／CONTRACT／PROGRESS markers 外。這是執行者不得寫 board 的狹義例外：僅可更新自己的登記列。寫入使用當前 board 共用鎖 `.aget-write.lock`、最新整檔 hash 比對與同目錄 temp＋rename；衝突時重讀合併，不盲寫。不能安全取得鎖或無寫入權限時，只回報登記內容供 COORD 補登，不宣稱已登記。現有 `update` 不提供 registry 欄位，不能假冒 `in_progress` 寫入登記，也不能用任務 summary 取代登記區。COORD 上線後由其維護登記狀態與核對時間；任務狀態／claim／progress 仍一律走 start-plan update。
+
+COORD 啟動先讀 registry，按 session id 使用宿主可用工具定位，再核對目前 Plan-ID、Task-ID、context、模型及是否仍待命；不得要求使用者為了啟動順序重開 session。舊 id 不可直接視為存活或持有 claim，尤其 `/clear` 可重用 record-id。確認依賴與資源後才認領、派工並將登記標為 dispatched；失聯標 unavailable，重複候選先去重，不能同時放行。沒有 session 聯絡工具時，提供含 session id 的可轉貼派工訊息，不能宣稱已通知。
+
+登記格式：
+
+| Plan-ID | Task-ID | Host | Session-ID | Model | State | Updated |
+|---|---|---|---|---|---|---|
+| <plan> | <task> | <host> | <actual-id-or-unavailable> | <model-or-unknown> | standby | <timestamp> |
+### Claude Code／Codex session id 取得方式
+
+- Claude Code：本機 skill 載入時的目前 session id 為 `${CLAUDE_SESSION_ID}`。使用 Claude 已展開的實際值；若仍是原樣 placeholder（例如直接 Read SKILL.md 或不支援替換的宿主），不可登記該字串。改取目前 SessionStart hook JSON 的 `session_id`（宿主已提供時），或請使用者以 `/status` 確認目前 session id。不要假設 shell 存在同名環境變數。
+- Codex：在目前頂層任務的 shell 讀取 `CODEX_THREAD_ID`；PowerShell：`[Environment]::GetEnvironmentVariable('CODEX_THREAD_ID')`，POSIX shell：`printenv CODEX_THREAD_ID`。登記 Host=codex、Session-ID=該 thread id。Codex 不執行 Claude 的 placeholder 替換，不可用上列 Claude 字串。
+- Codex 的 COORD 可用可用的 `list_threads`／`read_thread(threadId)` 核對，再以 `send_message_to_thread(threadId)` 派工。無環境值時可從宿主明確提供的目前 thread id 取得；不能只憑標題或最新時間猜中清單中的一筆。巢狀 CLI／子程序的繼承環境可能指向父任務，須以其啟動結果的 thread id 為準。
+- Claude 與 Codex 的 id 分屬不同宿主，配對鍵為 Host＋Session-ID；跨宿主沒有可用聯絡工具時提供轉貼訊息，不把 Claude id 傳入 Codex thread 工具。取得失敗仍依 unavailable 流程處理。
+
+來源：Claude skills https://code.claude.com/docs/en/skills#available-string-substitutions ；Codex thread https://learn.chatgpt.com/docs/app-server 。CODEX_THREAD_ID 已在本機 Codex shell 實測取得非空值；Claude placeholder 依官方規格，尚未在獨立 Claude session 實測。

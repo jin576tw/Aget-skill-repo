@@ -12,6 +12,13 @@
 - Plan-Revision: 1
 - Updated: <timestamp>
 
+## Session Registry
+
+任務 session 先登記 standby，COORD 核對後才放行；登記不取得 claim。
+
+| Plan-ID | Task-ID | Host | Session-ID | Model | State | Updated |
+|---|---|---|---|---|---|---|
+
 ## 工作目標
 <goal>
 
