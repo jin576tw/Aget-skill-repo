@@ -128,6 +128,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | [md-to-pdf](skills/md-to-pdf/SKILL.md) | Markdown 轉 PDF，支援中文、圖片與 Mermaid。 |
 | [ppt](skills/ppt/SKILL.md) | 用 MARP 產生投影片並匯出 PDF／PPTX。需要 `@marp-team/marp-cli`。 |
 | [bsd-report](skills/bsd-report/SKILL.md) | 依指定格式與截圖產生 BSD 測報 Word 檔。 |
+| [testdoc-supplement](skills/testdoc-supplement/SKILL.md) | 補產測試文件：先產含紅框截圖的 md 供確認，再批次轉 docx；單號、資料夾、範本、狀態字皆為參數。 |
 
 ### 研究、票務與知識
 

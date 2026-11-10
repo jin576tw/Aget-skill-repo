@@ -1,0 +1,26 @@
+{
+  "ticket": "ABC-1",
+  "sourceDir": "./out/any-folder-name",
+  "titleSuffix": "Verification",
+  "statusText": "Verified in the test environment",
+  "statusMode": "per-item",
+  "items": [
+    {
+      "title": "Item with one screenshot",
+      "text": ["One paragraph per array element."],
+      "shots": [
+        { "label": "Screen — the changed field", "image": "item1.png", "source": "./shots/item1.png" }
+      ]
+    },
+    {
+      "title": "Item with its own status line",
+      "status": "Verified, with a remark for this item only",
+      "text": "A plain string is one paragraph.",
+      "shots": [
+        { "label": "Screen — state A", "image": "item2-1.png", "source": "./shots/item2-1.png" },
+        { "label": "Screen — state B", "image": "item2-2.png", "source": "./shots/item2-2.png" }
+      ]
+    }
+  ],
+  "notes": ["Review-only remarks (image provenance, environment, deviations). They stay in the md and never reach the docx."]
+}
