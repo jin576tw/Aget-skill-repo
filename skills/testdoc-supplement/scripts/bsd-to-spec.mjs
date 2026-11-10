@@ -6,7 +6,7 @@
 // Refuses to overwrite --out. The skeleton keeps the BSD wording verbatim; edit it before running make-md.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
-import { die, parseArgs, readZip, unesc } from './lib.mjs';
+import { FORMAT, die, parseArgs, readZip, setFormat, unesc } from './lib.mjs';
 
 export function readBsd(docx) {
   const xml = readZip(docx).get('word/document.xml')?.toString('utf8') ?? die('no word/document.xml: ' + docx);
@@ -14,18 +14,23 @@ export function readBsd(docx) {
     text: [...m[0].matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map((t) => unesc(t[1])).join('').trim(),
     img: /<a:blip\b/.test(m[0]),
   }));
-  const ticket = paras.map((p) => /^\[PCR單\s*:\s*(.+?)\]$/.exec(p.text)?.[1]).find(Boolean) ?? null;
+  const tk = FORMAT.ticketLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), il = FORMAT.itemLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ticket = paras.map((p) => new RegExp(`^\\[${tk}\\s*:\\s*(.+?)\\]$`).exec(p.text)?.[1]).find(Boolean) ?? null;
   const items = [];
-  let cur = null, pendingLabel = null;
-  for (const p of paras) {
-    const h = /^項目(.+?)：(.*)$/.exec(p.text);
-    if (h) { cur = { title: h[2].trim(), text: [], shots: [] }; items.push(cur); pendingLabel = null; continue; }
-    if (!cur) continue;
-    if (p.img) { cur.shots.push({ label: (p.text.endsWith('：') ? p.text.slice(0, -1) : pendingLabel ?? '畫面截圖'), image: '' }); pendingLabel = null; continue; }
-    if (!p.text) continue;
-    if (p.text.endsWith('：') && /截圖|畫面|查詢|顯示/.test(p.text) && p.text.length < 60) pendingLabel = p.text.slice(0, -1);
+  let cur = null;
+  // A paragraph ending with "：" directly followed (ignoring empty paragraphs) by an image is that image's caption; every other
+  // paragraph is kept as item text, so nothing is dropped. Review the skeleton before running make-md.
+  const nextIsImage = (i) => { for (let j = i + 1; j < paras.length; j++) if (paras[j].img || paras[j].text) return paras[j].img; return false; };
+  paras.forEach((p, i) => {
+    const h = new RegExp(`^${il}(.+?)：(.*)$`).exec(p.text);
+    if (h) { cur = { title: h[2].trim(), text: [], shots: [] }; items.push(cur); return; }
+    if (!cur) return;
+    if (p.img) { cur.shots.push({ label: p.text.endsWith('：') ? p.text.slice(0, -1) : cur.pendingLabel ?? '畫面截圖', image: '' }); cur.pendingLabel = undefined; return; }
+    if (!p.text) return;
+    if (p.text.endsWith('：') && nextIsImage(i)) cur.pendingLabel = p.text.slice(0, -1);
     else cur.text.push(p.text);
-  }
+  });
+  for (const it of items) delete it.pendingLabel;
   items.forEach((it, i) => it.shots.forEach((s, k) => { s.image = `item${i + 1}${it.shots.length > 1 ? '-' + (k + 1) : ''}.png`; }));
   return { ticket, items };
 }
@@ -33,6 +38,7 @@ export function readBsd(docx) {
 if (process.argv[1]?.endsWith('bsd-to-spec.mjs')) {
   try {
     const a = parseArgs(process.argv.slice(2));
+    setFormat(a.format);
     if (!a._[0] || !a.out) die('usage: node bsd-to-spec.mjs <BSD.docx> --out <spec.json> [--ticket T] [--source-dir D]');
     const bsd = readBsd(path.resolve(a._[0]));
     const ticket = a.ticket || bsd.ticket || die('ticket not found in docx; pass --ticket');

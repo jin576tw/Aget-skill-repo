@@ -31,6 +31,19 @@ export function parseArgs(argv, flags = []) {
   return out;
 }
 
+// ---- presentation defaults (the BSD / 測試文件 layout). Override per run with --format <file.json> (any subset of these keys).
+export const FORMAT = { ticketLabel: 'PCR單', itemLabel: '項目', itemNumbering: 'cn', font: '新細明體', statusColor: 'FF0000', imageWidth: 5274310 };
+export function setFormat(file) {
+  if (!file) return FORMAT;
+  const o = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+  for (const k of Object.keys(o)) if (!(k in FORMAT)) die(`--format: unknown key "${k}" (allowed: ${Object.keys(FORMAT).join(', ')})`);
+  Object.assign(FORMAT, o);
+  if (!['cn', 'arabic'].includes(FORMAT.itemNumbering)) die('--format: itemNumbering must be "cn" or "arabic"');
+  return FORMAT;
+}
+const reEsc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, (c) => '\\' + c);
+export const itemNo = (n) => (FORMAT.itemNumbering === 'arabic' ? String(n) : numToCn(n));
+
 // ---- 項目編號 (一、二…十、十一…)
 const D = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
 export function numToCn(n) {
@@ -45,7 +58,9 @@ export const unesc = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replac
 
 export function pngSize(buf) {
   if (buf.length < 24 || buf.readUInt32BE(0) !== 0x89504e47) die('not a PNG file');
-  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20);
+  if (!w || !h) die('PNG has zero width or height');
+  return { w, h };
 }
 
 // ---- minimal ZIP reader (store + deflate), enough for OOXML packages
@@ -87,8 +102,8 @@ export function dumpDocx(file) {
   return { paragraphs, media };
 }
 
-// ---- structural read-back check (no Word available): XML well-formed, r:embed ids resolve, targets exist, png content type
-function wellFormed(xml, name) {
+// ---- structural read-back check (no Word available): tag balance (not a full XML validation), r:embed ids resolve, targets exist, png content type
+function tagBalance(xml, name) {
   const stack = [];
   for (const m of xml.matchAll(/<(\/?)([A-Za-z_][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g)) {
     if (m[4]) continue;
@@ -100,7 +115,7 @@ function wellFormed(xml, name) {
 export function checkDocx(file) {
   const z = readZip(file);
   const get = (n) => z.get(n)?.toString('utf8') ?? die(`${file}: missing part ${n}`);
-  for (const [n, b] of z) if (/\.(xml|rels)$/.test(n)) wellFormed(b.toString('utf8'), n);
+  for (const [n, b] of z) if (/\.(xml|rels)$/.test(n)) tagBalance(b.toString('utf8'), n);
   const doc = get('word/document.xml'), rels = get('word/_rels/document.xml.rels');
   const relIds = new Map([...rels.matchAll(/<Relationship\b[^>]*>/g)].map((m) => [/Id="([^"]+)"/.exec(m[0])[1], /Target="([^"]+)"/.exec(m[0])[1]]));
   const embeds = [...doc.matchAll(/r:embed="([^"]+)"/g)].map((m) => m[1]);
@@ -113,15 +128,15 @@ export function checkDocx(file) {
 }
 
 // ---- md render (from spec) / parse (to doc model)
-export function titleOf(spec) { return `${spec.ticket}_${spec.titleSuffix}`; }
+export function titleOf(spec) { return spec.titleSuffix ? `${spec.ticket}_${spec.titleSuffix}` : spec.ticket; }
 export const imagesDirName = (spec) => `${titleOf(spec)}_images`;
 
 export function renderMd(spec) {
   const mode = spec.statusMode || 'per-item';
-  const L = [`# ${titleOf(spec)}`, '', `**[PCR單 : ${spec.ticket}]**`, ''];
+  const L = [`# ${titleOf(spec)}`, '', `**[${FORMAT.ticketLabel} : ${spec.ticket}]**`, ''];
   if (mode === 'document') L.push(spec.statusText, '');
   spec.items.forEach((it, i) => {
-    L.push(`## 項目${numToCn(i + 1)}：${it.title}`, '');
+    L.push(`## ${FORMAT.itemLabel}${itemNo(i + 1)}：${it.title}`, '');
     if (mode === 'per-item') L.push(it.status || spec.statusText, '');
     for (const t of [].concat(it.text ?? [])) L.push(t, '');
     for (const s of it.shots ?? []) {
@@ -133,36 +148,47 @@ export function renderMd(spec) {
   return L.join('\n').replace(/\n+$/, '') + '\n';
 }
 
-export function parseMd(text, mdPath) {
+// The notes block starts at the first "---" line whose next non-empty line starts with ">" (or that ends the file).
+// Any other "---" in the body is outside the md dialect: reject it instead of silently cutting the document.
+function bodyLines(text, mdPath) {
   const lines = text.replace(/\r\n?/g, '\n').split('\n');
-  const hr = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
-  const body = (hr < 0 ? lines : lines.slice(0, hr)).join('\n');
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() !== '---') continue;
+    const next = lines.slice(i + 1).find((l) => l.trim() !== '');
+    if (next === undefined || next.startsWith('>')) return lines.slice(0, i);
+    die(`${mdPath}:${i + 1}: unsupported "---" in the body (the notes block is "---" followed by a ">" line)`);
+  }
+  return lines;
+}
+
+export function parseMd(text, mdPath) {
+  const body = bodyLines(text, mdPath).join('\n');
+  const tk = reEsc(FORMAT.ticketLabel), il = reEsc(FORMAT.itemLabel);
   const t = /^# (.+)$/m.exec(body)?.[1]?.trim() ?? die(`${mdPath}: missing "# title" line`);
-  const ticket = /\*\*\[PCR單 : (.+?)\]\*\*/.exec(body)?.[1]?.trim() ?? die(`${mdPath}: missing **[PCR單 : …]** line`);
+  const ticket = new RegExp(`\\*\\*\\[${tk} : (.+?)\\]\\*\\*`).exec(body)?.[1]?.trim() ?? die(`${mdPath}: missing **[${FORMAT.ticketLabel} : …]** line`);
   const parts = body.split(/^## /m);
-  const pre = parts[0].split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b && !b.startsWith('# ') && !b.startsWith('**[PCR單'));
-  if (pre.length > 1) die(`${mdPath}: more than one block between PCR line and first 項目 (document-level status must be a single line)`);
+  const pre = parts[0].split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b && !b.startsWith('# ') && !b.startsWith(`**[${FORMAT.ticketLabel}`));
+  if (pre.length > 1) die(`${mdPath}: more than one block between the ticket line and the first item (a document-level status must be a single line)`);
   const docStatus = pre[0] ?? null;
   const items = parts.slice(1).map((sec) => {
     const [head, ...rest] = sec.split('\n');
-    const h = /^項目(.+?)：(.*)$/.exec(head.trim()) ?? die(`${mdPath}: bad item heading: "${head}"`);
+    const h = new RegExp(`^${il}(.+?)：(.*)$`).exec(head.trim()) ?? die(`${mdPath}: bad item heading: "${head}"`);
     const blocks = rest.join('\n').split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
     const status = docStatus === null ? blocks.shift() ?? die(`${mdPath}: item ${h[1]} has no status line`) : null;
-    const texts = [], shots = [];
+    const order = []; // text paragraphs and screenshots in the order written in the md
     for (let i = 0; i < blocks.length; i++) {
       const b = blocks[i];
-      const img = /^!\[(.*?)\]\((.+)\)$/.exec(b);
-      if (img) die(`${mdPath}: image without preceding caption line in item ${h[1]}: ${b}`);
+      if (/^!\[(.*?)\]\((.+)\)$/.test(b)) die(`${mdPath}: image without preceding caption line in item ${h[1]}: ${b}`);
       const nx = /^!\[(.*?)\]\((.+)\)$/.exec(blocks[i + 1] ?? '');
       if (nx) {
         if (!b.endsWith('：')) die(`${mdPath}: caption line must end with "：" in item ${h[1]}: "${b}"`);
-        shots.push({ label: b.slice(0, -1), image: path.resolve(path.dirname(mdPath), nx[2]) });
+        order.push({ shot: { label: b.slice(0, -1), image: path.resolve(path.dirname(mdPath), nx[2]) } });
         i++;
-      } else texts.push(b);
+      } else order.push({ text: b });
     }
-    return { num: h[1], title: h[2], status, texts, shots };
+    return { num: h[1], title: h[2], status, order, texts: order.filter((o) => o.text).map((o) => o.text), shots: order.filter((o) => o.shot).map((o) => o.shot) };
   });
-  if (!items.length) die(`${mdPath}: no 項目 sections found`);
+  if (!items.length) die(`${mdPath}: no item sections found`);
   return { title: t, ticket, docStatus, items };
 }
 
@@ -174,8 +200,12 @@ export function collectMd(args) {
     const root = path.resolve(args.root);
     const suffix = args.suffix || die('--root needs --suffix (the title suffix, e.g. "測試文件(補)")');
     const tail = `_${suffix}.md`;
-    const found = new Map(); // ticket -> md path
-    const scan = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) if (e.isFile() && e.name.endsWith(tail)) found.set(e.name.slice(0, -tail.length), path.join(dir, e.name)); };
+    const found = new Map(); // ticket -> md path; the same ticket in two folders is ambiguous → error, never silently picked
+    const scan = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) if (e.isFile() && e.name.endsWith(tail)) {
+      const t = e.name.slice(0, -tail.length), f = path.join(dir, e.name);
+      if (found.has(t)) die(`ticket ${t} is ambiguous: ${found.get(t)} and ${f} (pass the md path explicitly)`);
+      found.set(t, f);
+    } };
     scan(root);
     for (const d of fs.readdirSync(root, { withFileTypes: true })) if (d.isDirectory()) scan(path.join(root, d.name));
     const wanted = args.tickets ? args.tickets.split(',').map((x) => x.trim()).filter(Boolean) : [...found.keys()].sort();

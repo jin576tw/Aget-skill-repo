@@ -41,9 +41,12 @@ export const injectStyle = (page, css) => page.addInitScript((c) => document.add
 }), css);
 
 // Wait for network idle and for a global spinner overlay (selector configurable, pass null to skip) to disappear.
+// Returns { idle, spinnerGone } so the caller can see when the page did NOT settle (a screenshot taken then may be stale).
 export async function settle(page, { spinner = '.ngx-spinner-overlay:not(.fade-out)', timeout = 20000 } = {}) {
-  await page.waitForLoadState('networkidle').catch(() => {});
-  if (spinner) await page.waitForFunction((sel) => !document.querySelector(sel), spinner, { timeout }).catch(() => {});
+  const idle = await page.waitForLoadState('networkidle', { timeout }).then(() => true, () => false);
+  const spinnerGone = !spinner || await page.waitForFunction((sel) => !document.querySelector(sel), spinner, { timeout }).then(() => true, () => false);
+  if (!idle || !spinnerGone) console.warn(`settle: page did not settle (idle=${idle}, spinnerGone=${spinnerGone})`);
+  return { idle, spinnerGone };
 }
 
 // Union bounding box of one group (a locator or an array of locators).

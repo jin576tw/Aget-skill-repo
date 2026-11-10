@@ -5,27 +5,29 @@
 //   node make-docx.mjs --root <dir> --suffix <title suffix> [--tickets A,B]   every <dir>/<any folder>/<T>_<suffix>.md (folder name need not equal T)
 //   options: --template <docx|md>   styles/settings/theme source (default: bsd-report docx-structure.md statics)
 //            --out-dir <dir>        write docx here instead of next to each md
-//            --dry-run              parse + validate + print the plan, write nothing
+//            --dry-run              full preflight (parse, images are valid PNGs, no forbidden text) + print the plan, write nothing
+//            --out <file.docx>      output path for a single md (default: <md folder>/<title>.docx)
+//            --format <f.json>      override labels / font / status color / image width (see FORMAT in lib.mjs)
 //            --forbid a,b           fail a ticket whose md body (above the --- notes) contains any of these terms
 //            --keep-parts           keep the temp OOXML parts folder
-// Never overwrites an existing docx (that file is skipped and reported; exit code 1). Never touches the md/images.
+// Never overwrites an existing docx (reported as a failure, exit code 1); a docx is published only after it passes the read-back check. Never touches the md/images.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { packDocxPath, docxStructurePath, checkDocx, collectMd, die, esc, forbidHits, parseArgs, parseMd, pngSize, readZip, splitList } from './lib.mjs';
+import { FORMAT, setFormat, packDocxPath, docxStructurePath, checkDocx, collectMd, die, esc, forbidHits, parseArgs, parseMd, pngSize, readZip, splitList } from './lib.mjs';
 
-const F = '<w:rFonts w:ascii="新細明體" w:eastAsia="新細明體" w:hAnsi="新細明體"/>';
+// Font, status color, labels and image width come from FORMAT (defaults = the BSD / 測試文件 layout, see lib.mjs).
+const fonts = () => `<w:rFonts w:ascii="${FORMAT.font}" w:eastAsia="${FORMAT.font}" w:hAnsi="${FORMAT.font}"/>`;
 const P = {
-  title: (t) => `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr>${F}<w:sz w:val="32"/></w:rPr><w:t>${esc(t)}</w:t></w:r></w:p>`,
-  pcr: (t) => `<w:p><w:r><w:rPr><w:b/>${F}<w:sz w:val="22"/></w:rPr><w:t>[PCR單 : ${esc(t)}]</w:t></w:r></w:p>`,
-  item: (n, t) => `<w:p><w:r><w:rPr><w:b/>${F}</w:rPr><w:t>項目${esc(n)}：${esc(t)}</w:t></w:r></w:p>`,
-  status: (t) => `<w:p><w:r><w:rPr><w:b/><w:bCs/>${F}<w:color w:val="FF0000"/></w:rPr><w:t>${esc(t)}</w:t></w:r></w:p>`,
-  text: (t) => `<w:p><w:r><w:rPr>${F}</w:rPr><w:t xml:space="preserve">${esc(t)}</w:t></w:r></w:p>`,
-  label: (t) => `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:rPr>${F}</w:rPr><w:t>${esc(t)}：</w:t></w:r></w:p>`,
-  img: (rId, cx, cy, id, name) => `<w:p><w:r><w:rPr>${F}<w:noProof/></w:rPr><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${id}" name="${name}"/><wp:cNvGraphicFramePr/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name=""/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`,
+  title: (t) => `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr>${fonts()}<w:sz w:val="32"/></w:rPr><w:t>${esc(t)}</w:t></w:r></w:p>`,
+  pcr: (t) => `<w:p><w:r><w:rPr><w:b/>${fonts()}<w:sz w:val="22"/></w:rPr><w:t>[${esc(FORMAT.ticketLabel)} : ${esc(t)}]</w:t></w:r></w:p>`,
+  item: (n, t) => `<w:p><w:r><w:rPr><w:b/>${fonts()}</w:rPr><w:t>${esc(FORMAT.itemLabel)}${esc(n)}：${esc(t)}</w:t></w:r></w:p>`,
+  status: (t) => `<w:p><w:r><w:rPr><w:b/><w:bCs/>${fonts()}<w:color w:val="${FORMAT.statusColor}"/></w:rPr><w:t>${esc(t)}</w:t></w:r></w:p>`,
+  text: (t) => `<w:p><w:r><w:rPr>${fonts()}</w:rPr><w:t xml:space="preserve">${esc(t)}</w:t></w:r></w:p>`,
+  label: (t) => `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:rPr>${fonts()}</w:rPr><w:t>${esc(t)}：</w:t></w:r></w:p>`,
+  img: (rId, cx, cy, id, name) => `<w:p><w:r><w:rPr>${fonts()}<w:noProof/></w:rPr><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${id}" name="${name}"/><wp:cNvGraphicFramePr/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name=""/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`,
 };
-const CX = 5274310; // display width used by the BSD / 測試文件 samples
 const IMG_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
 
 // Paragraph XML + image list for a parsed md. rIdFor(n) decides the relationship id of the n-th image.
@@ -36,14 +38,15 @@ export function buildBody(doc, rIdFor) {
   for (const it of doc.items) {
     x += '<w:p/>' + P.item(it.num, it.title);
     if (it.status !== null) x += P.status(it.status);
-    for (const t of it.texts) x += P.text(t);
-    for (const s of it.shots) {
+    for (const o of it.order) { // text and screenshots exactly in the order written in the md
+      if (o.text) { x += P.text(o.text); continue; }
+      const s = o.shot;
       const buf = fs.existsSync(s.image) ? fs.readFileSync(s.image) : die(`image not found: ${s.image}`);
       let size;
-      try { size = pngSize(buf); } catch { die(`image is not a PNG: ${s.image}`); }
+      try { size = pngSize(buf); } catch (e) { die(`image is not a valid PNG (${e.message}): ${s.image}`); }
       const n = images.length + 1;
       images.push({ n, buf, file: s.image });
-      x += P.label(s.label) + P.img(rIdFor(n), CX, Math.round((CX * size.h) / size.w), n, `圖片 ${n}`);
+      x += P.label(s.label) + P.img(rIdFor(n), FORMAT.imageWidth, Math.round((FORMAT.imageWidth * size.h) / size.w), n, `圖片 ${n}`);
     }
   }
   return { xml: x, images };
@@ -98,25 +101,37 @@ function partsFromTemplateDocx(parts, doc, tpl) {
   return images.length;
 }
 
-export function convertOne(mdFile, { template, outDir, dryRun, keepParts, forbid }) {
+// Full preflight on one md (parse, every image exists and is a valid PNG, no forbidden text, no empty item).
+// Used by --dry-run, which is therefore also the md review check; it never writes and does not fail because the docx already exists.
+export function preflight(mdFile, { forbid } = {}) {
   mdFile = path.resolve(mdFile);
   if (!fs.existsSync(mdFile)) die(`md not found (run step 1 first): ${mdFile}`);
-  const doc =parseMd(fs.readFileSync(mdFile, 'utf8'), mdFile);
-  const outFile = path.join(outDir ? path.resolve(outDir) : path.dirname(mdFile), `${doc.title}.docx`);
-  if (fs.existsSync(outFile)) die(`output exists, refuse to overwrite: ${outFile}`);
+  const doc = parseMd(fs.readFileSync(mdFile, 'utf8'), mdFile);
   const hits = forbidHits(doc, forbid);
   if (hits.length) die(`md body contains forbidden text (${hits.join(', ')}); move it below the "---" notes line: ${mdFile}`);
-  const nShots = doc.items.reduce((a, i) => a + i.shots.length, 0);
-  for (const it of doc.items) for (const s of it.shots) if (!fs.existsSync(s.image)) die(`image not found: ${s.image}`);
-  const summary = { md: mdFile, docx: outFile, ticket: doc.ticket, title: doc.title, items: doc.items.length, images: nShots, statusMode: doc.docStatus === null ? 'per-item' : 'document' };
-  if (dryRun) return { ...summary, dryRun: true };
+  for (const it of doc.items) if (!it.order.length) die(`item "${it.title}" has neither text nor image: ${mdFile}`);
+  buildBody(doc, (n) => `rId${n}`); // validates every image
+  return { mdFile, doc };
+}
+
+export function convertOne(mdFile, { template, outDir, output, dryRun, keepParts, forbid }) {
+  const { mdFile: md, doc } = preflight(mdFile, { forbid });
+  const outFile = output ? path.resolve(output) : path.join(outDir ? path.resolve(outDir) : path.dirname(md), `${doc.title}.docx`);
+  const summary = { md, docx: outFile, ticket: doc.ticket, title: doc.title, items: doc.items.length, images: doc.items.reduce((a, i) => a + i.shots.length, 0), statusMode: doc.docStatus === null ? 'per-item' : 'document' };
+  if (dryRun) return { ...summary, dryRun: true, outputExists: fs.existsSync(outFile) };
+  if (fs.existsSync(outFile)) die(`output exists, refuse to overwrite: ${outFile}`);
   const parts = fs.mkdtempSync(path.join(os.tmpdir(), `testdoc-${doc.ticket}-`));
   try {
     if (template && /\.docx$/i.test(template)) partsFromTemplateDocx(parts, doc, template);
     else partsFromStructureMd(parts, doc, template || docxStructurePath());
-    fs.mkdirSync(path.dirname(outFile), { recursive: true });
-    execFileSync(process.execPath, [packDocxPath(), parts, outFile], { stdio: ['ignore', 'pipe', 'inherit'] });
-    summary.check = checkDocx(outFile); // read-back; a failing check leaves the file for inspection and marks the ticket failed
+    // pack and verify in the temp folder; only a verified docx is published, so a failed check never leaves a file at the final path
+    const staged = path.join(parts, '..', path.basename(parts) + '.docx');
+    execFileSync(process.execPath, [packDocxPath(), parts, staged], { stdio: ['ignore', 'pipe', 'inherit'] });
+    try {
+      summary.check = checkDocx(staged);
+      fs.mkdirSync(path.dirname(outFile), { recursive: true });
+      fs.copyFileSync(staged, outFile, fs.constants.COPYFILE_EXCL);
+    } finally { fs.rmSync(staged, { force: true }); }
   } finally {
     if (!keepParts) fs.rmSync(parts, { recursive: true, force: true });
     else summary.parts = parts;
@@ -128,9 +143,15 @@ if (import.meta.url === new URL(`file:///${process.argv[1].replace(/\\/g, '/')}`
   const args = parseArgs(process.argv.slice(2), ['dry-run', 'keep-parts']);
   let failed = 0;
   const results = [];
-  for (const f of collectMd(args)) {
+  let files = [];
+  try {
+    setFormat(args.format);
+    files = collectMd(args);
+    if (args.out && files.length !== 1) die('--out names one docx file; give exactly one md');
+  } catch (e) { console.error('ERROR:', e.message); process.exit(1); }
+  for (const f of files) {
     try {
-      const r = convertOne(f, { template: args.template, outDir: args['out-dir'], dryRun: args['dry-run'], keepParts: args['keep-parts'], forbid: splitList(args.forbid) });
+      const r = convertOne(f, { template: args.template, outDir: args['out-dir'], output: args.out, dryRun: args['dry-run'], keepParts: args['keep-parts'], forbid: splitList(args.forbid) });
       results.push({ ok: true, ...r });
     } catch (e) { failed++; results.push({ ok: false, md: f, error: e.message }); }
   }
