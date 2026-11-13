@@ -1,6 +1,6 @@
 # Aget Work
 
-給 Claude Code 與 Codex 使用的開發工具庫：34 個 skills、5 個 Agents、Node 腳本與選用 hooks。
+給 Claude Code 與 Codex 使用的開發工具庫：35 個 skills、5 個 Agents、Node 腳本與選用 hooks。
 
 安裝後不需要每次先執行初始化指令，也不必記指令名稱。直接用自然語言提出需求（例如「修正登入頁錯誤訊息」「幫我找這個設計的論文佐證」），模型會依 skill 的 description 自動選用；也可以手動點名。
 
@@ -135,7 +135,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | Skill | 何時用 |
 |---|---|
 | [consult-claude](skills/consult-claude/SKILL.md) | Codex 透過本機 `claude` CLI 請 Claude 做獨立 review、第二意見、架構挑戰、除錯或辯論；Codex 驗證後決策。需要已登入的 Claude Code CLI。 |
-| [consult-codex](skills/consult-codex/SKILL.md) | Claude Code 透過本機 `codex exec` 請 Codex 做獨立 review、第二意見、架構挑戰、除錯或辯論，依任務規模路由 GPT-5.6 Luna／Terra／Sol；Claude 驗證後決策。需要已登入的 Codex CLI。 |
+| [consult-codex](skills/consult-codex/SKILL.md) | Claude Code 透過本機 `codex exec` 請 Codex 做獨立 review、第二意見、架構挑戰、除錯或辯論，依 rules/model-profiles.json 選擇可用模型；Claude 驗證後決策。需要已登入的 Codex CLI。 |
 | [ask-arxiv](skills/ask-arxiv/SKILL.md) | 找近期 arXiv 論文佐證或反證設計，或核對他人引用的研究數字。 |
 | [jira-get-attachments](skills/jira-get-attachments/SKILL.md) | 讀取 Jira 附件與截圖，確認實際功能入口。需要 Jira connector 或受信任的端點。 |
 | [jira-fix-comment](skills/jira-fix-comment/SKILL.md) | 依已驗證的修正整理 Jira 留言草稿。你明確授權才會張貼。 |
@@ -154,6 +154,15 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | [test-writer](agents/test-writer.md) | 撰寫並執行指定範圍的行為測試。 | 讀寫＋Bash |
 | [honey](agents/honey.md) | 整理任務接續或可重用知識，依 handover 契約保存。 | 讀寫＋Bash |
 
+### 執行環境與 Python 文件工具
+
+Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 repo `.venv` 隔離安裝，必要與範例選用套件分開。LibreOffice、Poppler、Tesseract 依功能另裝，不隨工具庫提供。詳見 [環境與安裝](docs/python.md) 及 [驗證限制](docs/python-validation.md)。
+
+| 檢查 | 執行方式 |
+|---|---|
+| 唯讀檢查 Python、套件與外部工具 | `node scripts/check-python.mjs --skill all [--python executable]`；不安裝。 |
+| 全部 Python AST 語法檢查 | `npm run check:python`；需要 Python 3.10+，不需安裝套件。 |
+
 ### Node 腳本
 
 一般由 skill 呼叫，也可手動執行。JSON 輸入格式見 [runtime](docs/runtime.md)。
@@ -169,6 +178,20 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | `scripts/pack-docx.mjs <parts-dir> <out.docx>` | 把 OOXML parts 打包成 .docx（bsd-report 使用）。 |
 | `skills/start-plan/scripts/plan-board.mjs` | plan-board 的查詢、驗證、認領與狀態更新。 |
 | `npm test` ／ `npm run check` | 回歸測試；套件、manifest 與連結檢查。 |
+
+### 文件腳本入口
+
+以下自 repo 根目錄執行；Python 使用 `.venv` 的完整執行檔路徑。內部 lib、Office validators 與 helpers 不另算使用者工具。
+
+| 用途 | 入口與依賴 |
+|---|---|
+| Word OOXML | `python skills/docx/scripts/office/unpack.py <docx> <dir>`、`pack.py <dir> <docx>`、`validate.py <path>`；defusedxml、lxml。`comment.py` 加註解；`accept_changes.py` 另需 LibreOffice。各入口可用 `--help`。 |
+| Office 轉換 | `python skills/docx/scripts/office/soffice.py --headless --convert-to pdf <docx>`；LibreOffice。xlsx 亦保留相同 Office helpers。 |
+| PDF 表單 | `skills/pdf/scripts/` 的 check_fillable_fields.py、extract_form_field_info.py、fill_fillable_fields.py；pypdf。參數見 [forms](skills/pdf/forms.md)。 |
+| PDF 結構與註解 | extract_form_structure.py、fill_pdf_form_with_annotations.py、check_bounding_boxes.py；pdfplumber／pypdf。參數見 [PDF skill](skills/pdf/SKILL.md) 與 forms。 |
+| PDF 圖片 | convert_pdf_to_images.py（pdf2image＋Poppler）、create_validation_image.py（Pillow）；參數見 forms。 |
+| Excel 重算 | `python skills/xlsx/scripts/recalc.py <xlsx> [timeout_seconds]`；openpyxl＋LibreOffice，隔離 profile 與 subprocess timeout。 |
+| 補測試文件（Node） | `node skills/testdoc-supplement/scripts/<entry>.mjs`；make-md、clean-md、make-docx、compare-docx、bsd-to-spec。shot-helpers 為匯入式截圖 helper。參數與 npm／瀏覽器依賴見 [skill](skills/testdoc-supplement/SKILL.md)。 |
 
 ### Hooks
 

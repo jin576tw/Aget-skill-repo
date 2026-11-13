@@ -1,0 +1,2 @@
+# Optional examples; not required by bundled scripts
+pandas>=2.2,<4

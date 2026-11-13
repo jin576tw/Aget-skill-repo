@@ -1,0 +1,5 @@
+# Runtime dependencies for bundled scripts; Python >=3.10
+pypdf>=5,<7
+pdfplumber>=0.11,<1
+pdf2image>=1.17,<2
+Pillow>=10,<13

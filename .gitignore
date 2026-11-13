@@ -55,3 +55,8 @@ node_modules/
 
 # Claude Code writes API types into a loaded mod
 mods/*/.claude-plugin/types/
+
+# Optional isolated Python runtime
+.venv/
+__pycache__/
+*.pyc

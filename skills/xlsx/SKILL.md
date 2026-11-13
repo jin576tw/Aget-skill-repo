@@ -4,6 +4,11 @@ description: "Use this skill any time a spreadsheet file is the primary input or
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
+## Python environment preflight
+
+Before running Python scripts, follow [isolated setup](../../docs/python.md) and run `node scripts/check-python.mjs --skill xlsx` from the repository root. Python >=3.10 is required. Use the repo `.venv` interpreter explicitly (Windows: `.venv/Scripts/python.exe`; macOS/Linux: `.venv/bin/python`). Commands below are relative to this skill directory; replace `python` with that interpreter. Dependencies are in [requirements.txt](requirements.txt); [optional examples](requirements-optional.txt) are separate. External tools are not bundled or automatically installed.
+
+
 # Requirements for Outputs
 
 ## All Excel files
@@ -71,7 +76,7 @@ A user may ask you to create, edit, or analyze the contents of an .xlsx file. Yo
 
 ## Important Requirements
 
-**LibreOffice Required for Formula Recalculation**: You can assume LibreOffice is installed for recalculating formula values using the `scripts/recalc.py` script. The script automatically configures LibreOffice on first run, including in sandboxed environments where Unix sockets are restricted (handled by `scripts/office/soffice.py`)
+**LibreOffice Required for Formula Recalculation**: Check that LibreOffice is available before using `scripts/recalc.py`. Each run uses an isolated temporary profile and a subprocess timeout. Only Linux uses the socket shim when required (and needs gcc).
 
 ## Reading and analyzing data
 
@@ -218,7 +223,7 @@ python scripts/recalc.py output.xlsx 30
 ```
 
 The script:
-- Automatically sets up LibreOffice macro on first run
+- Sets up a macro in an isolated temporary LibreOffice profile for each run
 - Recalculates all formulas in all sheets
 - Scans ALL cells for Excel errors (#REF!, #DIV/0!, etc.)
 - Returns JSON with detailed error locations and counts

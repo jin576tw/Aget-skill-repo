@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "node scripts/test.mjs",
-    "check": "node scripts/check-package.mjs"
+    "check": "node scripts/check-package.mjs",
+    "check:python": "node scripts/check-python.mjs --syntax"
   }
 }

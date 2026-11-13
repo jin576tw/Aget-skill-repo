@@ -4,6 +4,11 @@ description: "Use this skill whenever the user wants to create, read, edit, or m
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
+## Python environment preflight
+
+Before running Python scripts, follow [isolated setup](../../docs/python.md) and run `node scripts/check-python.mjs --skill docx` from the repository root. Python >=3.10 is required. Use the repo `.venv` interpreter explicitly (Windows: `.venv/Scripts/python.exe`; macOS/Linux: `.venv/bin/python`). Commands below are relative to this skill directory; replace `python` with that interpreter. Dependencies are in [requirements.txt](requirements.txt); [optional examples](requirements-optional.txt) are separate. External tools are not bundled or automatically installed.
+
+
 # DOCX creation, editing, and analysis
 
 ## Overview
@@ -586,5 +591,5 @@ After running `comment.py` (see Step 2), add markers to document.xml. For replie
 
 - **pandoc**: Text extraction
 - **docx**: `npm install -g docx` (new documents)
-- **LibreOffice**: PDF conversion (auto-configured for sandboxed environments via `scripts/office/soffice.py`)
+- **LibreOffice**: PDF conversion; install separately and check availability first. Linux restricted sockets may require gcc for the shim
 - **Poppler**: `pdftoppm` for images

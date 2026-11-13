@@ -4,18 +4,15 @@ Recalculates all formulas in an Excel file using LibreOffice
 """
 
 import json
-import os
-import platform
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
-from office.soffice import get_soffice_env
+from office.soffice import get_soffice_env, find_soffice
 
 from openpyxl import load_workbook
 
-MACRO_DIR_MACOS = "~/Library/Application Support/LibreOffice/4/user/basic/Standard"
-MACRO_DIR_LINUX = "~/.config/libreoffice/4/user/basic/Standard"
 MACRO_FILENAME = "Module1.xba"
 
 RECALCULATE_MACRO = """<?xml version="1.0" encoding="UTF-8"?>
@@ -25,46 +22,20 @@ RECALCULATE_MACRO = """<?xml version="1.0" encoding="UTF-8"?>
       ThisComponent.calculateAll()
       ThisComponent.store()
       ThisComponent.close(True)
+      StarDesktop.terminate()
     End Sub
 </script:module>"""
 
 
-def has_gtimeout():
-    try:
-        subprocess.run(
-            ["gtimeout", "--version"], capture_output=True, timeout=1, check=False
-        )
-        return True
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
-
-
-def setup_libreoffice_macro():
-    macro_dir = os.path.expanduser(
-        MACRO_DIR_MACOS if platform.system() == "Darwin" else MACRO_DIR_LINUX
-    )
-    macro_file = os.path.join(macro_dir, MACRO_FILENAME)
-
-    if (
-        os.path.exists(macro_file)
-        and "RecalculateAndSave" in Path(macro_file).read_text()
-    ):
-        return True
-
-    if not os.path.exists(macro_dir):
-        subprocess.run(
-            ["soffice", "--headless", "--terminate_after_init"],
-            capture_output=True,
-            timeout=10,
-            env=get_soffice_env(),
-        )
-        os.makedirs(macro_dir, exist_ok=True)
-
-    try:
-        Path(macro_file).write_text(RECALCULATE_MACRO)
-        return True
-    except Exception:
-        return False
+def setup_libreoffice_macro(profile):
+    macro_dir = Path(profile) / "user/basic/Standard"
+    macro_dir.mkdir(parents=True, exist_ok=True)
+    (macro_dir / MACRO_FILENAME).write_text(RECALCULATE_MACRO, encoding="utf-8")
+    (macro_dir / "script.xlb").write_text(
+        '<?xml version="1.0"?><library:library xmlns:library="http://openoffice.org/2000/library" library:name="Standard" library:readonly="false" library:passwordprotected="false"><library:element library:name="Module1"/></library:library>', encoding="utf-8")
+    (macro_dir.parent / "script.xlc").write_text(
+        '<?xml version="1.0"?><library:libraries xmlns:library="http://openoffice.org/2000/library" xmlns:xlink="http://www.w3.org/1999/xlink"><library:library library:name="Standard" xlink:href="Standard/script.xlb" xlink:type="simple" library:link="false"/></library:libraries>', encoding="utf-8")
+    return True
 
 
 def recalc(filename, timeout=30):
@@ -73,29 +44,23 @@ def recalc(filename, timeout=30):
 
     abs_path = str(Path(filename).absolute())
 
-    if not setup_libreoffice_macro():
-        return {"error": "Failed to setup LibreOffice macro"}
-
-    cmd = [
-        "soffice",
-        "--headless",
-        "--norestore",
-        "vnd.sun.star.script:Standard.Module1.RecalculateAndSave?language=Basic&location=application",
-        abs_path,
-    ]
-
-    if platform.system() == "Linux":
-        cmd = ["timeout", str(timeout)] + cmd
-    elif platform.system() == "Darwin" and has_gtimeout():
-        cmd = ["gtimeout", str(timeout)] + cmd
-
-    result = subprocess.run(cmd, capture_output=True, text=True, env=get_soffice_env())
-
-    if result.returncode != 0 and result.returncode != 124:  
-        error_msg = result.stderr or "Unknown error during recalculation"
-        if "Module1" in error_msg or "RecalculateAndSave" not in error_msg:
-            return {"error": "LibreOffice macro not configured properly"}
-        return {"error": error_msg}
+    if timeout <= 0:
+        return {"error": "timeout must be positive"}
+    try:
+        with tempfile.TemporaryDirectory(prefix="aget-lo-") as profile:
+            setup_libreoffice_macro(profile)
+            cmd = [find_soffice(), "-env:UserInstallation=" + Path(profile).as_uri(),
+                   "--headless", "--norestore",
+                   "vnd.sun.star.script:Standard.Module1.RecalculateAndSave?language=Basic&location=application",
+                   abs_path]
+            result = subprocess.run(cmd, capture_output=True, text=True,
+                                    timeout=timeout, env=get_soffice_env())
+            if result.returncode != 0:
+                return {"error": result.stderr or "LibreOffice recalculation failed"}
+    except subprocess.TimeoutExpired:
+        return {"error": f"LibreOffice recalculation timed out after {timeout} seconds"}
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"error": str(exc)}
 
     try:
         wb = load_workbook(filename, data_only=True)

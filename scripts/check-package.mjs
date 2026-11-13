@@ -9,7 +9,7 @@ function walk(dir) {
   return fs
     .readdirSync(dir, { withFileTypes: true })
     .flatMap((e) =>
-      e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)],
+      e.isDirectory() ? ([".git", "node_modules", ".venv", "__pycache__"].includes(e.name) ? [] : walk(path.join(dir, e.name))) : [path.join(dir, e.name)],
     );
 }
 for (const file of walk(sourceRoot).filter(

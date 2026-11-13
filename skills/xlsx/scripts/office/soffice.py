@@ -15,6 +15,8 @@ Usage:
 """
 
 import os
+import sys
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -32,9 +34,24 @@ def get_soffice_env() -> dict:
     return env
 
 
+def find_soffice() -> str:
+    """Resolve PATH first, then standard Windows/macOS installations."""
+    found = shutil.which("soffice")
+    if found:
+        return found
+    candidates = [Path("/Applications/LibreOffice.app/Contents/MacOS/soffice")]
+    if sys.platform == "win32":
+        candidates = [Path(os.environ.get(key, "C:/Program Files")) / "LibreOffice/program/soffice.exe"
+                      for key in ("PROGRAMFILES", "PROGRAMFILES(X86)")]
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    raise FileNotFoundError("LibreOffice not found; install it separately or add soffice to PATH")
+
+
 def run_soffice(args: list[str], **kwargs) -> subprocess.CompletedProcess:
     env = get_soffice_env()
-    return subprocess.run(["soffice"] + args, env=env, **kwargs)
+    return subprocess.run([find_soffice()] + args, env=env, **kwargs)
 
 
 
@@ -42,6 +59,8 @@ _SHIM_SO = Path(tempfile.gettempdir()) / "lo_socket_shim.so"
 
 
 def _needs_shim() -> bool:
+    if sys.platform != "linux":
+        return False
     try:
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.close()

@@ -4,6 +4,11 @@ description: Use this skill whenever the user wants to do anything with PDF file
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
+## Python environment preflight
+
+Before running Python scripts, follow [isolated setup](../../docs/python.md) and run `node scripts/check-python.mjs --skill pdf` from the repository root. Python >=3.10 is required. Use the repo `.venv` interpreter explicitly (Windows: `.venv/Scripts/python.exe`; macOS/Linux: `.venv/bin/python`). Commands below are relative to this skill directory; replace `python` with that interpreter. Dependencies are in [requirements.txt](requirements.txt); [optional examples](requirements-optional.txt) are separate. External tools are not bundled or automatically installed.
+
+
 # PDF Processing Guide
 
 ## Overview
