@@ -133,7 +133,7 @@ export function parseBoard(input, workspace) {
   const status = field(text, "Plan-Status");
   if (
     !["active", "completed"].includes(status) ||
-    (status === "completed") !== rows.every((r) => r.status === "completed")
+    (status === "completed" && !rows.every((r) => r.status === "completed"))
   )
     fail("PLAN_STATUS_MISMATCH");
   return { text, plan, revision, status, rows };
@@ -253,6 +253,25 @@ export function board(p) {
         })),
       };
     }
+    if (action === "complete") {
+      if (sha(original) !== p.expectedHash) fail("PLAN_CONCURRENT_UPDATE");
+      if (b.status === "completed") fail("PLAN_ALREADY_COMPLETED");
+      if (!b.rows.every((r) => r.status === "completed")) fail("PLAN_TASKS_INCOMPLETE");
+      if (typeof p.reviewer !== "string" || !p.reviewer.trim() ||
+          typeof p.evidence !== "string" || !p.evidence.trim() ||
+          !Array.isArray(p.inflight) || p.inflight.length !== 0)
+        fail("PLAN_ACCEPTANCE_REQUIRED");
+      const now = new Date().toISOString();
+      const clean = (v) => v.replace(/[\r\n|]/g, " ");
+      const next = b.text
+        .replace(/^- Plan-Status:.*$/m, "- Plan-Status: completed")
+        .replace(/^- Plan-Revision:.*$/m, `- Plan-Revision: ${b.revision + 1}`)
+        .replace(/^- Updated:.*$/m, `- Updated: ${now}`)
+        + `\n## Plan acceptance\n- Reviewer: ${clean(p.reviewer)}\n- Evidence: ${clean(p.evidence)}\n- Inflight: []\n`;
+      parseBoard(next, workspace);
+      atomic(file, next, sha(original));
+      return { signal: "PLAN_COMPLETED", hash: sha(next), plan_id: b.plan };
+    }
     if (action !== "update") fail("UNSUPPORTED_ACTION");
     if (sha(original) !== p.expectedHash) fail("PLAN_CONCURRENT_UPDATE");
     const r = b.rows.find((r) => r.task === task);
@@ -312,7 +331,7 @@ export function board(p) {
       .replace(/^- Plan-Revision:.*$/m, `- Plan-Revision: ${b.revision + 1}`)
       .replace(
         /^- Plan-Status:.*$/m,
-        `- Plan-Status: ${b.rows.every((x) => (x.task === task ? p.status === "completed" : x.status === "completed")) ? "completed" : "active"}`,
+        "- Plan-Status: active",
       )
       .replace(/^- Updated:.*$/m, `- Updated: ${now}`);
     parseBoard(next, workspace);

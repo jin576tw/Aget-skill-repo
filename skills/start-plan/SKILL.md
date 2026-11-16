@@ -19,7 +19,7 @@ description: 為跨 session、共享依賴或多項交付建立可接續計畫�
 
 ## Node 工具
 
-以 JSON stdin 呼叫 `node skills/start-plan/scripts/plan-board.mjs`，可用 action：resolve、hash、validate、status、update；status 同時列出可平行分波的機械候選（`wave_candidates`）與排除原因。欄位與範例見 [runtime](../../docs/runtime.md)。hash 保留 LF／CRLF 正規化及 trim，相容舊 locked contract；移除自動 commit／push、固定末項 INTEGRATION。更新需最新 expectedHash 與 claim。completed 不可重新開工；blocked claim 仍保留所有權。
+以 JSON stdin 呼叫 `node skills/start-plan/scripts/plan-board.mjs`，可用 action：resolve、hash、validate、status、update、complete；status 同時列出可平行分波的機械候選（`wave_candidates`）與排除原因。欄位與範例見 [runtime](../../docs/runtime.md)。hash 保留 LF／CRLF 正規化及 trim，相容舊 locked contract；移除自動 commit／push、固定末項 INTEGRATION。更新需最新 expectedHash 與 claim。completed 不可重新開工；blocked claim 仍保留所有權。
 
 一般 handover 不可覆寫 board；全部 board 目標完成後，把完整目標及證據經核對遷入 handover 的完成 checkpoint，再依 finalize 保存知識與 status。board 本身保留為計畫來源，不自動刪除。
 
@@ -48,3 +48,8 @@ COORD 啟動先讀 registry，按 session id 使用宿主可用工具定位，�
 - Claude 與 Codex 的 id 分屬不同宿主，配對鍵為 Host＋Session-ID；跨宿主沒有可用聯絡工具時提供轉貼訊息，不把 Claude id 傳入 Codex thread 工具。取得失敗仍依 unavailable 流程處理。
 
 來源：Claude skills https://code.claude.com/docs/en/skills#available-string-substitutions ；Codex thread https://learn.chatgpt.com/docs/app-server 。CODEX_THREAD_ID 已在本機 Codex shell 實測取得非空值；Claude placeholder 依官方規格，尚未在獨立 Claude session 實測。
+## 一致驗收與計畫完成
+
+所有 Task 放行與驗收均依 [測試預算與驗收](../verify/references/test-budget.md)，不因執行形式改變。
+
+全部 Task completed 後計畫仍為 active；驗收者依 [runtime 的 Plan acceptance](../../docs/runtime.md#plan-acceptance) 明確完成。superseded 不視為已驗收完成，不藉終態略過未交付目標；需要替換任務時先依確認流程調整計畫契約。

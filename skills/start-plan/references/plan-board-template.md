@@ -73,3 +73,5 @@ update 會把舊 progress 壓成一行移入 `- History:`（新到舊），不�
 舊版附帶 Execution-Mode／Session-Budget／Worker 等欄位可讀且 hash 保持，不要求新計畫加入。修改 locked contract 須有明確需求變更依據，不能藉更新狀態偷改。
 
 任務資訊按 [Execution Brief](../../start-work/references/execution-brief.md) 準備，可引用既有 spec 而不複製全文。新增欄位提供撰寫提示，不改變舊 board 的必要欄位或 hash 規則；既有 locked contract 不為套用新版範本而重寫。
+
+任務欄位與整體驗收依 [測試預算與驗收](../../verify/references/test-budget.md)；適用所有執行形式。

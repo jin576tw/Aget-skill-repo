@@ -23,3 +23,5 @@ description: 完成開發需求、修正與接續既有實作；依需求判斷�
 ## 按需參考
 
 [任務判斷](references/task-routing.md)、[交付與票務](references/delivery.md)。技術棧、debug、review、文件能力直接按目前需求選用；不預載整份工具庫。
+
+測試與驗收前讀 [測試預算與驗收](../verify/references/test-budget.md)。委派任何 subagent 前讀 [模型派工](references/model-dispatch.md)；既有宿主與使用者授權仍是委派前提。

@@ -75,3 +75,6 @@ COORD 啟動先讀 registry，按 session id 使用宿主可用工具定位，�
 - Claude 與 Codex 的 id 分屬不同宿主，配對鍵為 Host＋Session-ID；跨宿主沒有可用聯絡工具時提供轉貼訊息，不把 Claude id 傳入 Codex thread 工具。取得失敗仍依 unavailable 流程處理。
 
 來源：Claude skills https://code.claude.com/docs/en/skills#available-string-substitutions ；Codex thread https://learn.chatgpt.com/docs/app-server 。CODEX_THREAD_ID 已在本機 Codex shell 實測取得非空值；Claude placeholder 依官方規格，尚未在獨立 Claude session 實測。
+## 共用預算與一致驗收
+
+派工前依 [模型派工](../start-work/references/model-dispatch.md) 記錄任務 scale 與配置。所有 Task 不論 session 或 subagent 均依 [測試預算與驗收](../verify/references/test-budget.md) 定義並核對標準；不得以不同執行形式省略驗收。全部 Task completed 後，COORD 核對計畫完成條件與豁免，再以 start-plan complete 明確完成計畫，不以收波自動結案。

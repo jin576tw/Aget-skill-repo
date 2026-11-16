@@ -106,10 +106,14 @@ Notification 不是可靠通用閒置計時器，Codex 沒有此事件；Codex S
 
 用法注意：`root` 必填；以 `file` 指定 board 時須在 root 內（不是 `path`）。stdin 的開頭 BOM（PowerShell 管線會帶）會被忽略。summary／evidence 內的 Windows 路徑反斜線會成為無效 JSON escape，請寫 `/` 或 `\\`。`hash` 回的是單一任務 contract 的 hash，所以仍需 `taskId`（或 plan＋task）；整份 board 的 hash（update 的 `expectedHash`）取自 `status`／`validate` 回傳的 `hash`。
 
-action：resolve、hash、validate、status、update。可用 plan/task 取代 taskId，file 可明確指定 root 內檔案。status／validate／resolve 另回 `wave_candidates`（ready、依賴完成、contract 有 `Sign-off: none` 與 `Resources`，且資源不與 in_progress 或同波較前任務重疊）及 `wave_excluded`（task 與原因：`status:*`、`sign_off:*`、`resources_unknown`、`resource_conflict:<resource>@<task>`、`in_progress_resources_unknown:<task>`）；它只是機械候選，不取代 COORD 判斷。tasks 另回 contract 選填欄位 `model`、`effort`（COORD 選定的模型與建議 effort，未填為 null）。`Resources` 以逗號分隔、`NONE` 表示無互斥資源。update 加 status、claim、expectedHash、summary、evidence；舊 progress 以 `rN status: …` 一行移入 `- History:`，新到舊保留；進入 in_progress 需 caller 提供 claim，completed 需同 claim 及證據。待依賴未完成不能開工，已完成任務不能重開，其他 claim 不能接管。contract hash 保留 CRLF→LF 及 trim 規則；舊 Windows 路徑 hash 為後備查找。Node 介面以 JSON 取代舊 shell flags；不自動 Git、不強制末項 INTEGRATION。
+action：resolve、hash、validate、status、update、complete。可用 plan/task 取代 taskId，file 可明確指定 root 內檔案。status／validate／resolve 另回 `wave_candidates`（ready、依賴完成、contract 有 `Sign-off: none` 與 `Resources`，且資源不與 in_progress 或同波較前任務重疊）及 `wave_excluded`（task 與原因：`status:*`、`sign_off:*`、`resources_unknown`、`resource_conflict:<resource>@<task>`、`in_progress_resources_unknown:<task>`）；它只是機械候選，不取代 COORD 判斷。tasks 另回 contract 選填欄位 `model`、`effort`（COORD 選定的模型與建議 effort，未填為 null）。`Resources` 以逗號分隔、`NONE` 表示無互斥資源。update 加 status、claim、expectedHash、summary、evidence；舊 progress 以 `rN status: …` 一行移入 `- History:`，新到舊保留；進入 in_progress 需 caller 提供 claim，completed 需同 claim 及證據。待依賴未完成不能開工，已完成任務不能重開，其他 claim 不能接管。contract hash 保留 CRLF→LF 及 trim 規則；舊 Windows 路徑 hash 為後備查找。Node 介面以 JSON 取代舊 shell flags；不自動 Git、不強制末項 INTEGRATION。
 
 ## 一致性與故障界限
 
 Aget 的合作寫入方使用 `.aget-write.lock` 與預期 hash；hook pending 與 vault 使用不同鎖。鎖忙時不強制搶佔。崩潰留下鎖時，確認原程序已停止、核對檔案與預期 hash，再人工移除鎖後重試；不以時間自動破鎖。檔案替換以同目錄 temp + rename，不保證突斷電持久性；不合作的外部寫入仍有 TOCTOU 窗口。發現衝突即保留資料並重新核對。
 
 核心回歸：`npm test`；套件／相對連結：`npm run check`。Native Windows 及模型情境觸發需在對應宿主環境驗證，不能由本機 fixture 推導已通過。
+
+### Plan acceptance
+
+plan-board action `complete` 明確完成計畫：提供 `expectedHash`、非空 `reviewer`、非空 `evidence` 及 `inflight: []`。所有 Task 須 completed；失敗回 `PLAN_TASKS_INCOMPLETE` 或 `PLAN_ACCEPTANCE_REQUIRED`。最後 Task 完成不再自動完成計畫。evidence 記錄整體完成條件、Sign-off、必要驗證及使用者明確豁免；語意由驗收者負責，工具不解析自然語言。舊 completed board 可讀。

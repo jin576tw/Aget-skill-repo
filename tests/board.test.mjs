@@ -257,3 +257,29 @@ test("tasks expose optional Model and Effort; legacy boards return null", (t) =>
   assert.equal(b.model, null);
   assert.equal(b.effort, null);
 });
+
+test("plan completion requires explicit acceptance after all tasks, for any executor", (t) => {
+  const { p, file } = fixture(t);
+  const complete = (extra = {}) => board({ ...p, action: "complete", expectedHash: digest(file), reviewer: "coord", evidence: "AC and sign-off checked; no waivers", inflight: [], ...extra });
+  assert.throws(() => complete(), /TASKS_INCOMPLETE/);
+  for (const [task, claim] of [["A", "session"], ["B", "subagent"]]) {
+    board({ ...p, action: "update", task, claim, status: "in_progress", expectedHash: digest(file) });
+    assert.throws(() => board({ ...p, action: "update", task, claim, status: "completed", expectedHash: digest(file) }), /EVIDENCE/);
+    board({ ...p, action: "update", task, claim, status: "completed", evidence: "AC observed on current version", expectedHash: digest(file) });
+  }
+  assert.equal(board(p).plan_status, "active");
+  for (const extra of [{ reviewer: "" }, { evidence: "" }, { inflight: null }, { inflight: ["worker"] }])
+    assert.throws(() => complete(extra), /ACCEPTANCE_REQUIRED/);
+  assert.throws(() => complete({ expectedHash: "stale" }), /CONCURRENT/);
+  const evidence = "Integration checked; user waived external scan: unavailable, risk accepted, approval recorded; scan remains unverified";
+  assert.equal(complete({ evidence }).signal, "PLAN_COMPLETED");
+  assert.equal(board(p).plan_status, "completed");
+  assert.ok(fs.readFileSync(file, "utf8").includes(evidence));
+  assert.throws(() => complete(), /ALREADY_COMPLETED/);
+});
+
+test("completed plan cannot contain unfinished tasks, including legacy boards", (t) => {
+  const { p, file, text } = fixture(t);
+  fs.writeFileSync(file, text.replace("- Plan-Status: active", "- Plan-Status: completed"));
+  assert.throws(() => board(p), /PLAN_STATUS_MISMATCH/);
+});
