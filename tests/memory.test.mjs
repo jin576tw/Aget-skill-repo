@@ -6,6 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import {
   checkpoint,
+  validateCheckpoint,
   finalize,
   parseCheckpoint,
 } from "../scripts/lib/memory.mjs";
@@ -624,4 +625,8 @@ test("checkpoint continues a handover recorded with another OS's workspace path"
     /FOREIGN_WORKSPACE_HANDOVER_MISSING/,
   );
   assert.throws(() => checkpoint({ ...p, workspace: "relative/missing" }), /ENOENT/);
+});
+
+test("invalid goal state names allowed values", () => {
+  assert.throws(() => validateCheckpoint({ status: "active", session: "test", goals: [{ id: "G1", title: "goal", state: "done" }] }), /INVALID_GOAL:.*pending, pass, blocked/);
 });

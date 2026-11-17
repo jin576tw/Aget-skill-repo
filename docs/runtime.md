@@ -117,3 +117,17 @@ Aget 的合作寫入方使用 `.aget-write.lock` 與預期 hash；hook pending �
 ### Plan acceptance
 
 plan-board action `complete` 明確完成計畫：提供 `expectedHash`、非空 `reviewer`、非空 `evidence` 及 `inflight: []`。所有 Task 須 completed；失敗回 `PLAN_TASKS_INCOMPLETE` 或 `PLAN_ACCEPTANCE_REQUIRED`。最後 Task 完成不再自動完成計畫。evidence 記錄整體完成條件、Sign-off、必要驗證及使用者明確豁免；語意由驗收者負責，工具不解析自然語言。舊 completed board 可讀。
+
+### Dispatch budget
+
+新派工使用現有 update；budget 與 claim 同次原子保存。可先在 ready 狀態保存預算，再認領。缺預算不影響 status／validate 讀取舊 board，但從 ready／waiting／blocked 進入 in_progress 回 DISPATCH_BUDGET_REQUIRED，且不寫入。舊 in_progress 任務可回報及完成。
+
+~~~json
+{"action":"update","root":"/absolute/vault/handovers","workspace":"/absolute/project","taskId":"FEATURE-P01:IMPLEMENT","status":"in_progress","claim":"worker-1","expectedHash":"latest-board-hash","budget":{"model":"claude-sonnet-5-5","effort":"medium","maxMinutes":60,"maxRepairRounds":2,"verification":"local node tests; external scan unavailable, remains unverified","approval":"reference to actual task/batch authorization","tokenEstimate":"unknown","costEstimate":"unknown"}}
+~~~
+
+budget 必填 model、effort（建議值或 n/a）、maxMinutes（正整數）、maxRepairRounds（非負整數，0 表示不修補）、verification、approval（實際授權依據；本機檢查可引用原任務授權）。tokenEstimate／costEstimate 是選填估值，未知寫 unknown，不代表硬限制或訂閱扣款。額外模型／付費 API 仍依測試預算取得該批授權；工具只檢查欄位，不驗證文字真實性。時間是必要的退場界線，額外呼叫上限可記於 approval／summary，由執行者及 COORD 控制。
+
+Budget 以單行 JSON 保存在 PROGRESS。首次進入 in_progress 由工具設定 startedAt，caller 不設定此欄。一般更新保留預算；替換既有預算須提供 budgetReason，舊值與理由保留 History。blocked 恢復保留 startedAt 與已用修補輪數；到期需實際續行授權及新 budget／budgetReason，時間上限仍相對原 startedAt。ready／waiting 釋放 claim 後再認領，須明確提交新 budget，才為新 claim 起算。修補輪數及 attempt 記 summary／證據，工具不計數、不自動增加額度。
+
+status／validate／resolve 的 tasks 新增 budget 與 dispatch（budget_ready、reasons、near_limit、expired）。80%／到期按 startedAt 計算，不使用 Updated；只是讀取當下的提示，不會停止外部 session。wave_candidates 維持資源候選語意，派工仍須額外檢查 budget_ready、依賴與授權。錯誤或重複 Budget 行回報缺口，不使舊 board 整體不可讀。PLAN_NOT_FOUND 提供解析路徑及 handovers root 提示，不靜默搜尋或切換 root。

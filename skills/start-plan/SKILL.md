@@ -53,3 +53,7 @@ COORD 啟動先讀 registry，按 session id 使用宿主可用工具定位，�
 所有 Task 放行與驗收均依 [測試預算與驗收](../verify/references/test-budget.md)，不因執行形式改變。
 
 全部 Task completed 後計畫仍為 active；驗收者依 [runtime 的 Plan acceptance](../../docs/runtime.md#plan-acceptance) 明確完成。superseded 不視為已驗收完成，不藉終態略過未交付目標；需要替換任務時先依確認流程調整計畫契約。
+
+## 派工預算
+
+新派工前在 mutable progress 保存預算，不改寫舊 locked contract。使用現有 update 的 budget 參數，欄位及恢復規則見 [Dispatch budget](../../docs/runtime.md#dispatch-budget)。validate 的結構有效不等於可派工；COORD 同時核對 tasks 的 dispatch.budget_ready、依賴、資源及授權，再派工。舊 active 任務可回報與完成，從 ready／waiting／blocked 進入 in_progress 則需要有效預算。

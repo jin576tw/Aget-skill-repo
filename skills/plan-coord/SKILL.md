@@ -27,7 +27,7 @@ board 更新前讀最新內容與 expected hash；若更新介面會取代整段
 - **派工**：COORD 先在 board 記 claim 與本次 attempt 識別，再交給執行者該任務契約、必要 context 與回報格式；執行期間不改該任務契約。派工內容固定寫明資源所有權：執行者只能停止自己這次 attempt 啟動且能證明的程序與服務，不確定歸屬時回報 COORD，不批次終止。
 - **執行者邊界**：執行者只可寫自己的 Session Registry 登記列，不寫任務狀態／claim／progress、不釋放 claim、不自行標記完成；回傳證據包，含 task／claim／attempt ID、基準版本、改動範圍、逐條 AC 結果與證據位置、未執行的驗證、風險及需升級事項。
 - **收波**：COORD 依「放行與驗收」逐項重現，並由 COORD 依序寫入 board；全波處理完才派下一波。失敗或 `unverified` 的任務退回 ready 或升級，不整波重跑。
-- **停止條件**：同一次派工內修補與審查最多兩輪；同根因再現或需要裁定時停止，交回 COORD 走升級路徑。
+- **停止條件**：同一次派工內修補與審查不超過 Budget 的 maxRepairRounds（未另訂時建議兩輪）；同根因再現或需要裁定時停止，交回 COORD 走升級路徑。
 - **模型與顧問**：依風險、耦合與不確定性選擇模型或唯讀第二意見，不寫成固定規則；實際選擇、理由與 COORD 採納結果記在該任務 progress。
 
 ## 派工配置：模型與 effort
@@ -44,7 +44,7 @@ COORD 依模型指引實際指派模型：每個任務先選定一組「模型�
 - **選 effort（僅建議）**：effort 是給使用者的建議值，不強制、不阻擋派工；實際以使用者在執行 session 的設定為準，board progress 標註「建議 X，依使用者設定執行」。建議值照 board 任務的 effort 欄位或該任務契約；沒寫時依難度給 low／medium／high／xhigh，並遵守該模型的 directives（例如某些模型不支援 effort，就改以提示控制深度；只有 Opus 系列才考慮 xhigh 起步）。只有使用者或專案契約明確要求時才用 max。
 - **派工訊息**：依目標模型的格式寫。efficient tier 用「任務目標／輸入與範圍／明確規則／步驟／完成標準／不做的事」；其他 tier 給完整目標、完成標準與限制即可。附上該模型的 directives 精簡句。
 - **既有 session**：要沿用某個 session 時，先確認它目前用的模型；不相符時請使用者用 `/model` 切換或開新 session，不要假設已切換。effort 由使用者在該 session 設定，COORD 只提供建議值，不要求切換或確認，執行者以目前設定直接開工。宿主能直接啟動執行者（subagent、workflow）時，COORD 以選定模型啟動，effort 用使用者指定值，未指定才用建議值。
-- **調整**：執行者因能力不足失敗、或同根因再現時，升一級 tier 重派，並把原因記在 progress。
+- **調整**：執行者因能力不足失敗、或同根因再現時，由 COORD 評估升一級 tier 重派；先依測試預算核對額度授權，以 budgetReason 記錄配置修改理由，再派工。
 
 ## 退場
 
@@ -78,3 +78,12 @@ COORD 啟動先讀 registry，按 session id 使用宿主可用工具定位，�
 ## 共用預算與一致驗收
 
 派工前依 [模型派工](../start-work/references/model-dispatch.md) 記錄任務 scale 與配置。所有 Task 不論 session 或 subagent 均依 [測試預算與驗收](../verify/references/test-budget.md) 定義並核對標準；不得以不同執行形式省略驗收。全部 Task completed 後，COORD 核對計畫完成條件與豁免，再以 start-plan complete 明確完成計畫，不以收波自動結案。
+
+## 派工前預算與現場確認
+
+先確認任務契約與預算，再用 start-plan update 保存並 validate，最後才啟動執行者。預算以 progress 的 Budget 為準；handover 需要時引用該 board／task，不維護第二份互相漂移的數字。派工 prompt 帶相同模型、建議 effort、時間及修補上限、驗證方法與授權依據。欄位見 [runtime](../../docs/runtime.md#dispatch-budget)。
+
+- 放行前確認本機驗證工具、必要掃描服務連線／授權及負責人；不可用時記替代證據或 unverified，需豁免時取得明確授權，不自動以其他檢查宣稱掃描通過。
+- 派工約定中途回報點（預設時間一半），可觀測用量或時間達 80% 時回報；到上限交回成果、未完成項與剩餘估時，不自行續跑或升級模型。blocked 恢復沿用原預算、起算時間及已用修補輪數；續行授權須留下來源與修改理由。board 的時間提示不是宿主停止機制，輪數及用量仍由 COORD 核對。
+- attempt 識別及已用輪數記 progress summary／證據包，claim 只表示所有權；重新派工不能靠改 claim 規避預算。執行者記錄自己啟動程序的識別及啟動證據，退場先清理；停止前核對所有權，無法確認交 COORD 處理。
+- 交付明列「需使用者決定／核准」的項目、用途與待決事項，以及「參考資料」的用途與驗證狀態；沒有待決事項就明寫無。

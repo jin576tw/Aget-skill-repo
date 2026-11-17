@@ -39,7 +39,7 @@ export function validateCheckpoint(s) {
       !g.title.trim() ||
       !["pending", "pass", "blocked"].includes(g.state)
     )
-      fail("INVALID_GOAL");
+      fail("INVALID_GOAL: each goal needs unique id, title and state; allowed state: pending, pass, blocked");
     ids.add(g.id);
     if (
       g.state === "pass" &&

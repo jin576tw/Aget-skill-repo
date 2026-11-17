@@ -75,3 +75,5 @@ update 會把舊 progress 壓成一行移入 `- History:`（新到舊），不�
 任務資訊按 [Execution Brief](../../start-work/references/execution-brief.md) 準備，可引用既有 spec 而不複製全文。新增欄位提供撰寫提示，不改變舊 board 的必要欄位或 hash 規則；既有 locked contract 不為套用新版範本而重寫。
 
 任務欄位與整體驗收依 [測試預算與驗收](../../verify/references/test-budget.md)；適用所有執行形式。
+
+派工前以 update 保存 Budget（單行 JSON，位於 PROGRESS，不在 locked contract）；不要把範例或 placeholder 當已核准預算。必要欄位及範例見 [Dispatch budget](../../../docs/runtime.md#dispatch-budget)。update 會保留目前 Budget，舊值與修改理由保留於 History；budget_ready 只代表預算欄位齊全且未到期，不證明授權或驗證環境已核對。

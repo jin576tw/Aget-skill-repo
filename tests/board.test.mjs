@@ -5,6 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { board, contractHash, parseBoard } from "../scripts/lib/board.mjs";
 import { digest, workspaceInfo } from "../scripts/lib/files.mjs";
+const budget = { model: "claude-sonnet-5-5", effort: "medium", maxMinutes: 60,
+  maxRepairRounds: 2, verification: "node --test", approval: "local checks authorized", tokenEstimate: "unknown", costEstimate: "unknown" };
 function fixture(t, depends = "A") {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aget-board-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -40,6 +42,7 @@ test("claim, evidence, complete and immutable contract preserved", (t) => {
     task: "A",
     status: "in_progress",
     claim: "worker",
+    budget,
     expectedHash: digest(file),
   });
   assert.throws(
@@ -219,6 +222,7 @@ test("update keeps earlier progress as history without changing the contract", (
       task: "A",
       status,
       claim: "w1",
+      ...(summary === "started" ? { budget } : {}),
       summary,
       evidence,
       expectedHash: digest(file),
@@ -242,7 +246,7 @@ test("update keeps earlier progress as history without changing the contract", (
     history[2],
     /^ {2}- r0 ready: Summary: manual note; Evidence: log.txt; Risk: flaky env$/,
   );
-  assert.match(text, /- Summary: resumed\n- Evidence: ci#2 green\n- History:/);
+  assert.match(text, /- Summary: resumed\n- Evidence: ci#2 green\n- Budget: .*\n- History:/);
   assert.equal(board({ ...p, action: "hash", task: "A" }).computed, hash);
   assert.equal(board({ ...p, action: "validate" }).signal, "PLAN_BOARD_VALID");
 });
@@ -263,7 +267,7 @@ test("plan completion requires explicit acceptance after all tasks, for any exec
   const complete = (extra = {}) => board({ ...p, action: "complete", expectedHash: digest(file), reviewer: "coord", evidence: "AC and sign-off checked; no waivers", inflight: [], ...extra });
   assert.throws(() => complete(), /TASKS_INCOMPLETE/);
   for (const [task, claim] of [["A", "session"], ["B", "subagent"]]) {
-    board({ ...p, action: "update", task, claim, status: "in_progress", expectedHash: digest(file) });
+    board({ ...p, action: "update", task, claim, budget, status: "in_progress", expectedHash: digest(file) });
     assert.throws(() => board({ ...p, action: "update", task, claim, status: "completed", expectedHash: digest(file) }), /EVIDENCE/);
     board({ ...p, action: "update", task, claim, status: "completed", evidence: "AC observed on current version", expectedHash: digest(file) });
   }
@@ -282,4 +286,98 @@ test("completed plan cannot contain unfinished tasks, including legacy boards", 
   const { p, file, text } = fixture(t);
   fs.writeFileSync(file, text.replace("- Plan-Status: active", "- Plan-Status: completed"));
   assert.throws(() => board(p), /PLAN_STATUS_MISMATCH/);
+});
+
+test("dispatch budget gate rejects missing or invalid budgets without changing board", (t) => {
+  const { p, file } = fixture(t);
+  const original = fs.readFileSync(file, "utf8");
+  const update = (extra = {}) => board({ ...p, action: "update", task: "A", claim: "w1", status: "in_progress", expectedHash: digest(file), ...extra });
+  const status = board({ ...p, action: "validate" });
+  assert.equal(status.signal, "PLAN_BOARD_VALID");
+  assert.equal(status.tasks[0].dispatch.budget_ready, false);
+  for (const bad of [undefined, null, [], {}, { ...budget, maxMinutes: 0 }, { ...budget, maxMinutes: "60" }, { ...budget, maxRepairRounds: -1 }, { ...budget, approval: "" }, { ...budget, model: "" }]) {
+    assert.throws(() => update({ budget: bad }), /DISPATCH_BUDGET_REQUIRED/);
+    assert.equal(fs.readFileSync(file, "utf8"), original);
+  }
+  update({ budget: { ...budget, maxRepairRounds: 0 } });
+  const started = board(p).tasks[0];
+  assert.equal(started.dispatch.budget_ready, true);
+  assert.equal(started.budget.tokenEstimate, "unknown");
+  assert.ok(Number.isFinite(Date.parse(started.budget.startedAt)));
+});
+
+test("budget persists, blocked resume keeps its clock, changes need a reason", (t) => {
+  const { p, file } = fixture(t);
+  const hash = board({ ...p, action: "hash", task: "A" }).computed;
+  const step = (status, extra = {}) => board({ ...p, action: "update", task: "A", claim: "w1", status, expectedHash: digest(file), ...extra });
+  step("in_progress", { budget });
+  const startedAt = board(p).tasks[0].budget.startedAt;
+  step("in_progress", { summary: "checkpoint" });
+  step("blocked");
+  step("in_progress");
+  assert.equal(board(p).tasks[0].budget.startedAt, startedAt);
+  assert.throws(() => step("in_progress", { budget: { ...budget, maxMinutes: 90 } }), /BUDGET_CHANGE_REASON_REQUIRED/);
+  step("in_progress", { budget: { ...budget, maxMinutes: 90, approval: "user approved extension" }, budgetReason: "user extended time" });
+  assert.equal(board(p).tasks[0].budget.startedAt, startedAt);
+  const text = fs.readFileSync(file, "utf8");
+  assert.equal((text.match(/^- Budget:/gm) || []).length, 1);
+  assert.match(text, /Budget change: user extended time/);
+  assert.match(text, /maxMinutes.*60/);
+  assert.equal(board({ ...p, action: "hash", task: "A" }).computed, hash);
+});
+
+test("expired budget blocks resume, exposes warning and accepts authorized extension", (t) => {
+  const startedAt = new Date(Date.now() - 61 * 60000).toISOString();
+  const { p, file } = waveFixture(t, [{ id: "A", status: "blocked", claim: "w1", progress: '- Budget: ' + JSON.stringify({ ...budget, startedAt }) + '\n' }]);
+  const step = (extra = {}) => board({ ...p, action: "update", task: "A", claim: "w1", status: "in_progress", expectedHash: digest(file), ...extra });
+  assert.equal(board(p).tasks[0].dispatch.expired, true);
+  assert.throws(() => step(), /budget_expired/);
+  step({ budget: { ...budget, maxMinutes: 90, approval: "user approved extension" }, budgetReason: "authorized continuation" });
+  assert.equal(board(p).tasks[0].budget.startedAt, startedAt);
+  assert.equal(board(p).tasks[0].dispatch.expired, false);
+});
+
+test("legacy active claims can report and complete; malformed budget remains readable", (t) => {
+  const { p, file } = waveFixture(t, [{ id: "A", status: "in_progress", claim: "legacy", progress: "- Budget: invalid json\n" }]);
+  assert.equal(board({ ...p, action: "validate" }).signal, "PLAN_BOARD_VALID");
+  assert.deepEqual(board(p).tasks[0].dispatch.reasons, ["budget_invalid_json"]);
+  for (const status of ["in_progress", "completed"])
+    board({ ...p, action: "update", task: "A", claim: "legacy", status, evidence: "local result", expectedHash: digest(file) });
+  assert.equal(board(p).tasks[0].status, "completed");
+});
+
+test("wrong root reports the resolved path and handovers hint", (t) => {
+  const { p } = fixture(t);
+  assert.throws(() => board({ ...p, root: p.workspace }), e => /PLAN_NOT_FOUND/.test(e.message) && e.message.includes("handovers") && e.message.includes(p.workspace));
+});
+
+test("budget, claim and evidence preserve literal replacement characters", (t) => {
+  const { p, file } = fixture(t);
+  const literal = "$& $$ $' $" + String.fromCharCode(96);
+  const claim = "$&";
+  const special = { ...budget, verification: literal, approval: literal };
+  board({ ...p, action: "update", task: "A", claim, status: "in_progress", budget: special, summary: literal, evidence: literal, expectedHash: digest(file) });
+  const task = board(p).tasks[0];
+  assert.equal(task.claim, claim);
+  assert.equal(task.budget.verification, literal);
+  const text = fs.readFileSync(file, "utf8");
+  assert.ok(text.includes("- Summary: " + literal));
+  assert.ok(text.includes("- Evidence: " + literal));
+  board({ ...p, action: "update", task: "A", claim, status: "completed", evidence: literal, expectedHash: digest(file) });
+  assert.equal(board(p).tasks[0].budget.approval, literal);
+});
+
+test("released claim requires explicit budget; blocked legacy cannot resume without one", (t) => {
+  const startedAt = new Date(Date.now() - 60000).toISOString();
+  const { p, file } = waveFixture(t, [
+    { id: "A", status: "in_progress", claim: "w1", progress: "- Budget: " + JSON.stringify({ ...budget, startedAt }) + "\n" },
+    { id: "B", status: "blocked", claim: "legacy" },
+  ]);
+  const step = (task, claim, status, extra = {}) => board({ ...p, action: "update", task, claim, status, expectedHash: digest(file), ...extra });
+  step("A", "w1", "ready");
+  assert.throws(() => step("A", "w2", "in_progress"), /fresh budget/);
+  step("A", "w2", "in_progress", { budget });
+  assert.notEqual(board(p).tasks[0].budget.startedAt, startedAt);
+  assert.throws(() => step("B", "legacy", "in_progress"), /DISPATCH_BUDGET_REQUIRED/);
+  step("B", "legacy", "in_progress", { budget });
 });

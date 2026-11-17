@@ -35,6 +35,35 @@ function block(s, type, id) {
   if (m.length !== 1) fail("TASK_CONTRACT_BLOCKED: " + id + " " + type);
   return { raw: m[0][0], body: m[0][1] };
 }
+// Budget lives in mutable progress; historical contracts remain unchanged.
+const budgetKeys = ["model", "effort", "maxMinutes", "maxRepairRounds", "verification", "approval", "tokenEstimate", "costEstimate"];
+function budgetReasons(budget) {
+  if (!budget) return ["budget_missing"];
+  if (typeof budget !== "object" || Array.isArray(budget)) return ["budget_invalid"];
+  const reasons = [];
+  for (const key of ["model", "effort", "verification", "approval"])
+    if (typeof budget[key] !== "string" || !budget[key].trim()) reasons.push("budget_invalid:" + key);
+  if (!Number.isSafeInteger(budget.maxMinutes) || budget.maxMinutes <= 0)
+    reasons.push("budget_invalid:maxMinutes");
+  if (!Number.isSafeInteger(budget.maxRepairRounds) || budget.maxRepairRounds < 0)
+    reasons.push("budget_invalid:maxRepairRounds");
+  return reasons;
+}
+function progressBudget(body) {
+  const matches = [...body.matchAll(/^- Budget: *(.*)$/gm)];
+  let budget = null, reasons;
+  try {
+    if (matches.length > 1) throw new Error();
+    budget = matches.length ? JSON.parse(matches[0][1]) : null;
+    reasons = budgetReasons(budget);
+  } catch { reasons = ["budget_invalid_json"]; }
+  const elapsed = budget?.startedAt ? (Date.now() - Date.parse(budget.startedAt)) / 60000 : null;
+  if (elapsed !== null && (!Number.isFinite(elapsed) || elapsed < 0)) reasons.push("budget_invalid:startedAt");
+  const expired = Number.isFinite(elapsed) && elapsed >= budget?.maxMinutes;
+  if (expired) reasons.push("budget_expired");
+  return { budget, dispatch: { budget_ready: reasons.length === 0, reasons, expired,
+    near_limit: Number.isFinite(elapsed) && elapsed >= budget?.maxMinutes * 0.8 } };
+}
 const states = [
   "ready",
   "waiting",
@@ -80,7 +109,7 @@ export function parseBoard(input, workspace) {
   for (const r of rows) {
     r.block = block(text, "TASK", r.task);
     r.contract = block(r.block.body, "CONTRACT", r.task);
-    block(r.block.body, "PROGRESS", r.task);
+    Object.assign(r, progressBudget(block(r.block.body, "PROGRESS", r.task).body));
     if (
       field(r.block.body, "Contract-SHA256").toLowerCase() !==
       contractHash(r.contract.body)
@@ -206,7 +235,7 @@ export function board(p) {
     action = (p.action || "status").toLowerCase();
   return locked(p.root, () => {
     const original = read(file);
-    if (original === null) fail("PLAN_NOT_FOUND");
+    if (original === null) fail("PLAN_NOT_FOUND: " + file + "; root must be the board directory (usually <vault>/handovers), not the vault parent");
     if (action === "hash") {
       if (!task) fail("TASK_NAME_REQUIRED");
       const b = block(original.replace(/\r\n?/g, "\n"), "TASK", task),
@@ -303,9 +332,34 @@ export function board(p) {
       fail("CLAIM_REQUIRED");
     const clean = (s) => String(s || "none").replace(/[\r\n|]/g, " ");
     const now = new Date().toISOString();
+    const progressBefore = block(r.block.body, "PROGRESS", task);
+    let budgetLine = progressBefore.body.split("\n").filter(l => /^- Budget:/.test(l)).join("\n");
+    let budget = r.budget;
+    if (p.budget !== undefined) {
+      const reasons = budgetReasons(p.budget);
+      if (reasons.length) fail("DISPATCH_BUDGET_REQUIRED: " + reasons.join(", "));
+      budget = Object.fromEntries(budgetKeys.filter(k => p.budget[k] !== undefined).map(k => [k, p.budget[k]]));
+      const oldConfig = r.budget && Object.fromEntries(budgetKeys.filter(k => r.budget[k] !== undefined).map(k => [k, r.budget[k]]));
+      if (budgetLine && JSON.stringify(oldConfig) !== JSON.stringify(budget) &&
+          (typeof p.budgetReason !== "string" || !p.budgetReason.trim()))
+        fail("BUDGET_CHANGE_REASON_REQUIRED");
+      if (r.budget?.startedAt) budget.startedAt = r.budget.startedAt;
+    }
+    if (p.status === "in_progress" && r.status !== "in_progress") {
+      // A released claim needs an explicit fresh budget; resuming blocked keeps its clock.
+      if (r.claim === "-" && r.budget?.startedAt && p.budget === undefined)
+        fail("DISPATCH_BUDGET_REQUIRED: new claim requires a fresh budget");
+      const reasons = budgetReasons(budget);
+      if (reasons.length) fail("DISPATCH_BUDGET_REQUIRED: " + reasons.join(", "));
+      budget = { ...budget, startedAt: r.claim === "-" ? now : budget.startedAt || now };
+      const check = progressBudget("- Budget: " + JSON.stringify(budget));
+      if (!check.dispatch.budget_ready) fail("DISPATCH_BUDGET_REQUIRED: " + check.dispatch.reasons.join(", "));
+    }
+    if (p.budget !== undefined || (p.status === "in_progress" && r.status !== "in_progress"))
+      budgetLine = "- Budget: " + JSON.stringify(budget);
     let changed = r.block.raw
       .replace(/^- Status:.*$/m, `- Status: ${p.status}`)
-      .replace(/^- Claim-ID:.*$/m, `- Claim-ID: ${claim}`)
+      .replace(/^- Claim-ID:.*$/m, () => `- Claim-ID: ${claim}`)
       .replace(/^- Task-Revision:.*$/m, `- Task-Revision: ${r.revision + 1}`);
     const progress = block(changed, "PROGRESS", task);
     // Keep earlier progress as one-line history entries so evidence is never overwritten.
@@ -313,19 +367,22 @@ export function board(p) {
     const at = lines.findIndex((l) => /^- History:/.test(l));
     const history = at < 0 ? [] : lines.slice(at + 1);
     const current = (at < 0 ? lines : lines.slice(0, at))
+      .filter(l => !/^- Budget:/.test(l) || l !== budgetLine)
       .map((l) => l.replace(/^\s*-\s*/, "").trim())
       .join("; ");
+    if (p.budget !== undefined && p.budgetReason)
+      history.unshift(`  - Budget change: ${clean(p.budgetReason)}`);
     if (current)
       history.unshift(`  - r${r.revision} ${r.status}: ${clean(current)}`);
     changed = changed.replace(
       progress.raw,
-      `<!-- START-PLAN:PROGRESS:${task}:BEGIN -->\n- Updated: ${now}\n- Summary: ${clean(p.summary)}\n- Evidence: ${clean(p.evidence)}\n${history.length ? "- History:\n" + history.join("\n") + "\n" : ""}<!-- START-PLAN:PROGRESS:${task}:END -->`,
+      () => `<!-- START-PLAN:PROGRESS:${task}:BEGIN -->\n- Updated: ${now}\n- Summary: ${clean(p.summary)}\n- Evidence: ${clean(p.evidence)}\n${budgetLine ? budgetLine + "\n" : ""}${history.length ? "- History:\n" + history.join("\n") + "\n" : ""}<!-- START-PLAN:PROGRESS:${task}:END -->`,
     );
     let next = b.text
-      .replace(r.block.raw, changed)
+      .replace(r.block.raw, () => changed)
       .replace(
         r.raw,
-        `| ${p.status === "completed" ? "[x]" : "[ ]"} | ${task} | ${p.status} | ${claim} | ${r.revision + 1} | ${now} |`,
+        () => `| ${p.status === "completed" ? "[x]" : "[ ]"} | ${task} | ${p.status} | ${claim} | ${r.revision + 1} | ${now} |`,
       );
     next = next
       .replace(/^- Plan-Revision:.*$/m, `- Plan-Revision: ${b.revision + 1}`)
