@@ -235,7 +235,7 @@ export function board(p) {
     action = (p.action || "status").toLowerCase();
   return locked(p.root, () => {
     const original = read(file);
-    if (original === null) fail("PLAN_NOT_FOUND: " + file + "; root must be the board directory (usually <vault>/handovers), not the vault parent");
+    if (original === null) fail("PLAN_NOT_FOUND: " + file + "; root must be the board directory (usually <vault>/plan-boards), not the vault parent");
     if (action === "hash") {
       if (!task) fail("TASK_NAME_REQUIRED");
       const b = block(original.replace(/\r\n?/g, "\n"), "TASK", task),

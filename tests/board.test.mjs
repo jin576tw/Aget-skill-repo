@@ -346,9 +346,9 @@ test("legacy active claims can report and complete; malformed budget remains rea
   assert.equal(board(p).tasks[0].status, "completed");
 });
 
-test("wrong root reports the resolved path and handovers hint", (t) => {
+test("wrong root reports the resolved path and plan-boards hint", (t) => {
   const { p } = fixture(t);
-  assert.throws(() => board({ ...p, root: p.workspace }), e => /PLAN_NOT_FOUND/.test(e.message) && e.message.includes("handovers") && e.message.includes(p.workspace));
+  assert.throws(() => board({ ...p, root: p.workspace }), e => /PLAN_NOT_FOUND/.test(e.message) && e.message.includes("plan-boards") && e.message.includes(p.workspace));
 });
 
 test("budget, claim and evidence preserve literal replacement characters", (t) => {
