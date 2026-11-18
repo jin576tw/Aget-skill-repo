@@ -9,3 +9,5 @@
 有接續價值的里程碑及明確暫停，用 handover 的 checkpoint 保存目標、證據、限制與下一步。Stop、idle、compact、clear 都不表示全部目標完成。完成後使用 finalize：蒸餾知識、來源與 project status 保存且驗證成功，才刪除該任務 handover。沒有新知識須記理由。不要記錄機密或整份 transcript，不自動 commit／push。
 
 模型提示的精簡指令以 `rules/model-profiles.json` 為準；派工前讀目標模型那一筆，efficient tier 用其任務格式，不複製固定路由表。
+
+新增或修改 Aget 工具只改 Aget-skill-repo（先確認未落後 origin），再以 setup-work 同步兩宿主；收尾前以 `--check --target <home>` 確認 `SETUP_CURRENT`，且 `~/.claude`／`~/.codex` 無未加 `aget-` 前綴的重複舊檔。
