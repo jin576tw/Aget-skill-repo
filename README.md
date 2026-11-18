@@ -225,6 +225,37 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 
 已合併的舊 skills：preflight、gate-keeper、goal-preflight、loop-preflight、compact-signal、ticket-workflow 併入 start-work；windows-shell-gotchas 隨 PowerShell 一起移除。
 
+## 當前工具版本現況
+
+更新日期：2026-11-18。
+
+| 項目 | 現況 |
+|---|---|
+| 套件版本 | `0.1.0`（`package.json`、`.claude-plugin/plugin.json`、`.codex-plugin/plugin.json` 一致） |
+| 來源分支 | `start-work-plugin`（基準 `75c7fcf`，2026-11-17 `fix(plan): require budgets before dispatch`） |
+| 安裝方式 | B. setup-work：`--scope user --platform both --hooks`，安裝副本在 `~/.aget/plugin` |
+| 同步範圍 | `~/.claude/skills/aget-*`、`~/.claude/agents/aget-*`、`~/.claude/CLAUDE.md` 區塊；`~/.agents/skills/aget-*`、`~/.codex/AGENTS.md` 區塊；兩宿主 hooks |
+| 內容 | 35 個 skills、5 個 Agents |
+| 檢查結果 | `setup-work --check` 為 `SETUP_CURRENT`（changes、removed 皆空） |
+
+本版調整：
+
+- `rules/development.md`：最高原則「最小可行、不過度設計」；探索（搜尋、盤點、讀 log／歷程、跨檔定位）在宿主可啟動 subagent 時派 subagent，依 `rules/model-profiles.json` 選最小足夠模型。
+- `rules/model-profiles.json`：新增 `claude-fable-5-2`；Opus 5.5、Sonnet 5.5、Haiku 5.5 補選模與 effort 準則（依 2026-11-09 模型選擇文章）。
+- `agents/spec-reviewer.md`：合併 SA 範本完整性與審查收斂規則。
+- `skills/plan-coord`：補 Claude Code COORD 以 `ListAgents` 名稱聯絡 session 的規則。
+
+更新流程（repo 為唯一來源，不在宿主目錄直接改工具）：
+
+```sh
+git pull --ff-only
+node scripts/setup-work.mjs --scope user --platform both --hooks --check
+node scripts/setup-work.mjs --scope user --platform both --hooks
+node scripts/setup-work.mjs --scope user --platform both --hooks --check   # 應為 SETUP_CURRENT
+```
+
+已知限制：setup 只管理 `aget-*` 名稱，不會偵測或清理宿主目錄中不帶前綴的同名舊副本；`~/.agents/skills` 另有第三方安裝器裝的 docx、pdf、xlsx、tdd、find-skills、frontend-design、web-design-guidelines，與 `aget-*` 同名並存，尚待評估。
+
 ## 延伸文件
 
 - [runtime](docs/runtime.md)：安裝細節與 checkpoint、finalize、plan-board 的 JSON 介面
