@@ -11,6 +11,7 @@ const profiles = JSON.parse(fs.readFileSync(path.join(root, "rules/model-profile
 const expected = new Map([
   ["claude-opus-4-8", "frontier"], ["claude-sonnet-5", "balanced"],
   ["claude-opus-5", "frontier"], ["claude-opus-5-5", "frontier"],
+  ["claude-fable-5-2", "frontier"],
   ["claude-fable-5-1", "frontier"], ["claude-sonnet-5-5", "balanced"],
   ["claude-haiku-5-5", "efficient"], ["gpt-6.1-terra", "balanced"],
   ["gpt-6.1-sol", "balanced"], ["claude-haiku-4-5", "efficient"],
