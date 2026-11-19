@@ -1,6 +1,6 @@
 # Aget Work
 
-最近異動時間：2026-11-19 12:44（UTC+08:00）
+最近異動時間：2026-11-19 12:48（UTC+08:00）
 
 給 Claude Code 與 Codex 使用的開發工具庫：35 個 skills、5 個 Agents、Node 腳本與選用 hooks。
 
@@ -148,16 +148,28 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform both --hook
 
 模型依任務的範圍、風險與不確定性選擇。Effort 控制同一模型在單次任務中的推理深度。使用者指定的模型與 effort 優先。
 
-| 模型 | Aget 定位 | 適用任務 |
-|---|---|---|
-| `gpt-6.2-sol` | balanced | 日常實作、依賴盤點、驗收明確的測試 |
-| `gpt-6.2-astra` | frontier | 複雜跨模組判斷、架構取捨，或 Sol 提高 effort 後仍有具體能力缺口的工作 |
+以下列出 Codex 與 Claude Code 各通用模型系列的最新一代。Aget 定位供派工參考，實際可選型號以該宿主的模型選單、帳戶方案與組織限制為準。
+
+| 宿主 | 模型 ID | Aget 定位 | 適用任務 |
+|---|---|---|---|
+| Codex | `gpt-6.2-astra` | frontier | 複雜跨模組判斷、架構取捨、需要反覆驗證的工程工作 |
+| Codex | `gpt-6.2-sol` | balanced | 日常實作、依賴盤點、範圍與驗收明確的多步工作 |
+| Codex | `gpt-6.1-terra` | balanced | 畫面與圖表理解、瀏覽器或桌面操作、範圍集中的修正 |
+| Codex | `gpt-6-luna` | efficient | 欄位抽取、例行分類與大量可直接驗證的小任務 |
+| Claude Code | `claude-fable-5-2` | frontier | 長時間自主工作、大型遷移、複雜或高不確定性的規劃 |
+| Claude Code | `claude-opus-5-5` | frontier | 複雜程式設計、獨立程式碼審查、深度研究 |
+| Claude Code | `claude-sonnet-5-5` | balanced | 日常實作、依規格修正、重複型代理工作 |
+| Claude Code | `claude-haiku-5-5` | efficient | 快速搜尋、分類、資訊整理與高頻派工 |
+
+Claude Code 的 `opus`、`sonnet`、`haiku` 與 `fable` 別名會依供應商和閘道解析成不同版本。需要固定版本時，以模型 ID 選擇並確認實際解析結果。Fable 5.2 的選用也受方案與供應商限制。Claude Mythos 5.2 屬限量開放，使用前須有組織存取權。 [OpenAI 模型選擇](https://developers.openai.com/api/docs/guides/model-selection) · [Claude 最新模型](https://platform.claude.com/docs/en/models/overview#latest-models) · [Claude Code 模型設定](https://code.claude.com/docs/en/model-config) · [Mythos 存取](https://platform.claude.com/docs/en/models/mythos-5-2/migration-guide)
+
+既有 Codex 派工介面也可能列出 GPT-6.1 Sol、GPT-6 Sol 與 GPT-6 Astra。較早版本的 Aget 指令與模型匹配保存在完整模型表。 [Aget 模型表](rules/model-profiles.json)
 
 1. **選起始 effort。** 可直接核對的工作從 `low` 起步。範圍明確、需要多步判斷的工作從 `medium` 起步。
 2. **按結果調整。** 先補齊背景與可重跑的驗證。仍有具體推理缺口時，同模型提高一級並重查該缺口。有模型能力不足的證據時再升模型，並記錄配置與理由。
 3. **依宿主派工。** 完整對話派工沿用主會話設定。其他派工在宿主允許覆寫時明確傳入模型與 effort。既有 session 核對實際設定，建議 effort 可供參考。
 
-Codex 派工介面對這兩個模型列出 `low`（預設）、`medium`、`high`、`xhigh`、`max`、`ultra`。`max` 與 `ultra` 依使用者或適用專案契約明確指定使用。其他宿主以實測介面為準。 [模型表](rules/model-profiles.json) · [完整派工指引](skills/start-work/references/model-dispatch.md)
+Codex 的派工介面對 GPT-6.2 Sol 與 Astra 列出 `low`（預設）、`medium`、`high`、`xhigh`、`max`、`ultra`。表列 Claude 5 系列在 Claude Code 支援 `low`、`medium`、`high`、`xhigh`、`max`。Aget 的 `max` 與 `ultra` 依使用者或適用專案契約明確指定使用。其他模型與宿主的 effort 以實際介面為準。 [完整派工指引](skills/start-work/references/model-dispatch.md) · [Claude Code effort](https://code.claude.com/docs/en/model-config#adjust-effort-level)
 
 ### Agents
 
