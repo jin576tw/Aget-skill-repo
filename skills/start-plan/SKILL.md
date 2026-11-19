@@ -17,6 +17,8 @@ description: 為跨 session、共享依賴或多項交付建立可接續計畫�
 
 簡單計畫可直接回覆；持久共享 board 使用 [Markdown 範本](references/plan-board-template.md)。現有 board 的 locked contract 與 claim 不可靜默變更；計畫方向已獲授權時不增加例行確認。
 
+多執行者或多 session 需要場控時，使用 [plan-coord](../plan-coord/SKILL.md)。只有跨任務契約、共用資源或多方案判斷出現實質衝突時，依 [plan-conflict-discussion](../plan-conflict-discussion/SKILL.md) 蒐證與裁定。派工模型及 effort 採用 [模型派工指引](../start-work/references/model-dispatch.md)。
+
 ## Node 工具
 
 以 JSON stdin 呼叫 `node skills/start-plan/scripts/plan-board.mjs`，可用 action：resolve、hash、validate、status、update、complete；status 同時列出可平行分波的機械候選（`wave_candidates`）與排除原因。欄位與範例見 [runtime](../../docs/runtime.md)。hash 保留 LF／CRLF 正規化及 trim，相容舊 locked contract；移除自動 commit／push、固定末項 INTEGRATION。更新需最新 expectedHash 與 claim。completed 不可重新開工；blocked claim 仍保留所有權。

@@ -16,6 +16,7 @@ const expected = new Map([
   ["claude-haiku-5-5", "efficient"], ["gpt-6.1-terra", "balanced"],
   ["gpt-6.1-sol", "balanced"], ["claude-haiku-4-5", "efficient"],
   ["claude-haiku-4-5-20251001", "efficient"],
+  ["gpt-6.2-astra", "frontier"], ["gpt-6.2-sol", "balanced"],
   ["gpt-6-astra", "frontier"], ["gpt-6-sol", "balanced"],
   ["gpt-6-luna", "efficient"], ["gpt-5.6-sol", "frontier"],
   ["gpt-5.6-terra", "balanced"], ["gpt-5.6-luna", "efficient"],
@@ -39,7 +40,9 @@ test("profiles have anchored unique matches, sources and known tiers", () => {
     assert.equal(matches.length, 1, id);
     assert.equal(matches[0].tier, tier);
   }
-  assert.equal(profiles.models.some((p) => new RegExp(p.match).test("gpt-7-unknown")), false);
+  for (const model of ["gpt-7-unknown", "gpt-6x2-sol", "gpt-6.2-sol-preview", "custom-gpt-6.2-sol"]) {
+    assert.equal(profiles.models.some((profile) => new RegExp(profile.match).test(model)), false, model);
+  }
 });
 
 test("hook injects Claude family once and Codex only on first model or change", (t) => {

@@ -15,6 +15,8 @@ description: 保存或讀取跨 Agent 的任務接續，處理明確暫停、里
 
 舊格式可讀。轉入 Aget 格式時先對照所有目標、決策及證據，使用 `node scripts/migrate-handover.mjs` 明確列出預期 hash 與完整 checkpoint，不自動掃描或刪除其他交接。
 
+接續進行中的 board 任務時，checkpoint 引用 board 路徑及 `{PLAN-ID}:{TASK}`，記下尚未回寫的發現與下一步。進度、claim 和預算以 board 為準；接手先讀回 board 狀態並核對任務及 claim。
+
 ## finalize
 
 完成 checkpoint 後由正常工作執行 `node scripts/memory.mjs finalize`。判斷新知識／既有知識／沒有新增價值，準備適當 knowledge、來源與 project status；三種結果都留可核對紀錄。來源不可只指向即將刪除的交接。vault 需明確採用 [結案契約](../../rules/memory-contract.md)。

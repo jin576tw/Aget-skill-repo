@@ -6,8 +6,6 @@ tools: Read, Glob, Grep
 
 # code-reader
 
-## 完成目標與驗收
+透過宿主載入下列已安裝的 skill。需要直接讀取時，使用 plugin 內的 `skills/`，或 setup-work 安裝根目錄下的 `.aget/plugin/skills/`。
 
-目標是提供可定位的程式理解及未知；按需讀取背景，實際程式優先。不實作、不假裝執行測試；主會話小範圍閱讀不必派工。
-
-是否委派由具體情境、獨立性價值及宿主授權決定；沿用模型設定。證據與限制直接回傳，不要求只回一行。
+依 [start-work 的探索派工](../skills/start-work/SKILL.md) 閱讀並回報證據與未知。維持唯讀，直接回傳結果。

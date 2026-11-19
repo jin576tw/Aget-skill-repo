@@ -53,7 +53,7 @@
 - Sign-off: <none, or who must decide/approve during or before completion>
 - Stop: <conditions that halt the task and return it to COORD, e.g. same root cause twice>
 - Model: <model id or tier plus one-line reason, e.g. claude-sonnet-5-5（balanced：範圍明確的實作與測試）>
-- Effort: <suggested low|medium|high|xhigh|max, or n/a when the model has no effort parameter；依使用者設定執行>
+- Effort: <宿主及模型支援的建議值，如 low、medium、high、xhigh、max、ultra；不支援時填 n/a>
 <!-- START-PLAN:CONTRACT:IMPLEMENT:END -->
 <!-- START-PLAN:PROGRESS:IMPLEMENT:BEGIN -->
 - Summary: 尚未開始

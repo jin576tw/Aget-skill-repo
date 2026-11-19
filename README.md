@@ -22,10 +22,10 @@
 
 ### A. Claude Code plugin
 
-在 Claude Code 中執行。在本分支合併進 `main` 之前，需在 repo 後面加 `@start-work-plugin` 指定分支：
+在 Claude Code 中執行以下兩行，從預設分支 `main` 安裝。
 
 ```text
-/plugin marketplace add jin576tw/Aget-skill-repo@start-work-plugin
+/plugin marketplace add jin576tw/Aget-skill-repo
 /plugin install aget-skill-repo@aget
 ```
 
@@ -34,7 +34,7 @@
 終端機寫法等效：
 
 ```sh
-claude plugin marketplace add jin576tw/Aget-skill-repo@start-work-plugin
+claude plugin marketplace add jin576tw/Aget-skill-repo
 claude plugin install aget-skill-repo@aget
 ```
 
@@ -47,7 +47,7 @@ plugin 會載入 skills、agents 與 `hooks/hooks.json`，但不會修改你的 
 先 clone 本 repo，再在 repo 目錄內執行：
 
 ```sh
-git clone -b start-work-plugin https://github.com/jin576tw/Aget-skill-repo.git
+git clone https://github.com/jin576tw/Aget-skill-repo.git
 cd Aget-skill-repo
 ```
 
@@ -60,7 +60,7 @@ node scripts/setup-work.mjs --target /absolute/project --platform both
 安裝到使用者層，對所有專案生效，並啟用 hooks 與 journal：
 
 ```sh
-node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --hooks --vault /absolute/vault
+node scripts/setup-work.mjs --scope user --target "$HOME" --platform both --hooks --vault /absolute/vault
 ```
 
 | 參數 | 說明 |
@@ -142,9 +142,15 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform claude --ho
 | [llm-wiki-maintainer](skills/llm-wiki-maintainer/SKILL.md) | 查詢、整理、蒸餾知識庫。 |
 | [find-skills](skills/find-skills/SKILL.md) | 目前能力不足時，查找可用的 skill 或 plugin。 |
 
+### 模型派工
+
+`gpt-6.2-sol`（balanced）用於日常實作、依賴盤點及驗收明確的測試。`gpt-6.2-astra`（frontier）用於複雜跨模組判斷、架構取捨，或同模型提高 effort 後仍有能力缺口的工作。本宿主的兩個模型均列出 low（預設）、medium、high、xhigh、max、ultra。其他宿主以實測介面為準。 [模型表](rules/model-profiles.json)
+
+使用者指定值優先。直接可核對的工作從 low 起步，範圍明確的多步判斷從 medium 起步。結果不足時先補背景與可重跑的驗證，再針對具體推理缺口提高一級並重查。有模型能力不足的證據時再升模型。max／ultra 依明確指定使用。 [模型派工指引](skills/start-work/references/model-dispatch.md)
+
 ### Agents
 
-在需要獨立 context 或獨立審查視角、且宿主允許時才由主會話委派，不是每次都用。
+探索與測試派工依 [start-work](skills/start-work/SKILL.md)，程式碼與規格審查依 [review-checklist](skills/review-checklist/SKILL.md) 及 [spec-conventions](skills/spec-conventions/SKILL.md)。Claude 入口保留既有呼叫名稱與工具清單。Codex 以宿主提供的工作者搭配相同 skills，需強制唯讀時使用宿主權限限制。跨 session 規劃從 [start-plan](skills/start-plan/SKILL.md) 進入，按情境載入場控或衝突討論。
 
 | Agent | 用途 | 工具權限 |
 |---|---|---|
@@ -227,12 +233,12 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 
 ## 當前工具版本現況
 
-更新日期：2026-11-18。
+更新日期：2026-11-19。
 
 | 項目 | 現況 |
 |---|---|
-| 套件版本 | `0.1.0`（`package.json`、`.claude-plugin/plugin.json`、`.codex-plugin/plugin.json` 一致） |
-| 來源分支 | `start-work-plugin`（基準 `75c7fcf`，2026-11-17 `fix(plan): require budgets before dispatch`） |
+| 套件版本 | `0.1.1`（`package.json`、`.claude-plugin/plugin.json`、`.codex-plugin/plugin.json` 一致） |
+| 發布來源 | [`main`](https://github.com/jin576tw/Aget-skill-repo/tree/main) |
 | 安裝方式 | B. setup-work：`--scope user --platform both --hooks`，安裝副本在 `~/.aget/plugin` |
 | 同步範圍 | `~/.claude/skills/aget-*`、`~/.claude/agents/aget-*`、`~/.claude/CLAUDE.md` 區塊；`~/.agents/skills/aget-*`、`~/.codex/AGENTS.md` 區塊；兩宿主 hooks |
 | 內容 | 35 個 skills、5 個 Agents |
@@ -242,7 +248,8 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 
 - `rules/development.md`：最高原則「最小可行、不過度設計」；探索（搜尋、盤點、讀 log／歷程、跨檔定位）在宿主可啟動 subagent 時派 subagent，依 `rules/model-profiles.json` 選最小足夠模型。
 - `rules/model-profiles.json`：新增 `claude-fable-5-2`；Opus 5.5、Sonnet 5.5、Haiku 5.5 補選模與 effort 準則（依 2026-11-09 模型選擇文章）。
-- `agents/spec-reviewer.md`：合併 SA 範本完整性與審查收斂規則。
+- 探索、測試與審查規則由共用 skills 提供。Claude 保留四個角色的既有名稱與工具清單。
+- GPT-6.2 Sol（balanced）及 Astra（frontier）納入模型表。
 - `skills/plan-coord`：補 Claude Code COORD 以 `ListAgents` 名稱聯絡 session 的規則。
 
 更新流程（repo 為唯一來源，不在宿主目錄直接改工具）：
@@ -254,7 +261,7 @@ node scripts/setup-work.mjs --scope user --platform both --hooks
 node scripts/setup-work.mjs --scope user --platform both --hooks --check   # 應為 SETUP_CURRENT
 ```
 
-已知限制：setup 只管理 `aget-*` 名稱，不會偵測或清理宿主目錄中不帶前綴的同名舊副本；`~/.agents/skills` 另有第三方安裝器裝的 docx、pdf、xlsx、tdd、find-skills、frontend-design、web-design-guidelines，與 `aget-*` 同名並存，尚待評估。
+已知限制：setup 只管理 `aget-*` 名稱，不會偵測或清理宿主目錄中不帶前綴的同名舊副本；本次核對的七個 Claude 同名舊連結均指向已不存在的目錄。兩宿主的 `aget-*` 版本雜湊與來源一致。
 
 ## 延伸文件
 
