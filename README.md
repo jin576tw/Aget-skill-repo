@@ -1,5 +1,7 @@
 # Aget Work
 
+最近異動時間：2026-11-19 12:44（UTC+08:00）
+
 給 Claude Code 與 Codex 使用的開發工具庫：35 個 skills、5 個 Agents、Node 腳本與選用 hooks。
 
 安裝後不需要每次先執行初始化指令，也不必記指令名稱。直接用自然語言提出需求（例如「修正登入頁錯誤訊息」「幫我找這個設計的論文佐證」），模型會依 skill 的 description 自動選用；也可以手動點名。
@@ -144,9 +146,18 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform both --hook
 
 ### 模型派工
 
-`gpt-6.2-sol`（balanced）用於日常實作、依賴盤點及驗收明確的測試。`gpt-6.2-astra`（frontier）用於複雜跨模組判斷、架構取捨，或同模型提高 effort 後仍有能力缺口的工作。本宿主的兩個模型均列出 low（預設）、medium、high、xhigh、max、ultra。其他宿主以實測介面為準。 [模型表](rules/model-profiles.json)
+模型依任務的範圍、風險與不確定性選擇。Effort 控制同一模型在單次任務中的推理深度。使用者指定的模型與 effort 優先。
 
-使用者指定值優先。直接可核對的工作從 low 起步，範圍明確的多步判斷從 medium 起步。結果不足時先補背景與可重跑的驗證，再針對具體推理缺口提高一級並重查。有模型能力不足的證據時再升模型。max／ultra 依明確指定使用。 [模型派工指引](skills/start-work/references/model-dispatch.md)
+| 模型 | Aget 定位 | 適用任務 |
+|---|---|---|
+| `gpt-6.2-sol` | balanced | 日常實作、依賴盤點、驗收明確的測試 |
+| `gpt-6.2-astra` | frontier | 複雜跨模組判斷、架構取捨，或 Sol 提高 effort 後仍有具體能力缺口的工作 |
+
+1. **選起始 effort。** 可直接核對的工作從 `low` 起步。範圍明確、需要多步判斷的工作從 `medium` 起步。
+2. **按結果調整。** 先補齊背景與可重跑的驗證。仍有具體推理缺口時，同模型提高一級並重查該缺口。有模型能力不足的證據時再升模型，並記錄配置與理由。
+3. **依宿主派工。** 完整對話派工沿用主會話設定。其他派工在宿主允許覆寫時明確傳入模型與 effort。既有 session 核對實際設定，建議 effort 可供參考。
+
+Codex 派工介面對這兩個模型列出 `low`（預設）、`medium`、`high`、`xhigh`、`max`、`ultra`。`max` 與 `ultra` 依使用者或適用專案契約明確指定使用。其他宿主以實測介面為準。 [模型表](rules/model-profiles.json) · [完整派工指引](skills/start-work/references/model-dispatch.md)
 
 ### Agents
 
@@ -232,8 +243,6 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 已合併的舊 skills：preflight、gate-keeper、goal-preflight、loop-preflight、compact-signal、ticket-workflow 併入 start-work；windows-shell-gotchas 隨 PowerShell 一起移除。
 
 ## 當前工具版本現況
-
-更新日期：2026-11-19。
 
 | 項目 | 現況 |
 |---|---|
