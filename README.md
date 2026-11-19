@@ -100,7 +100,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform both --hook
 | [handover](skills/handover/SKILL.md) | 暫停或到達里程碑時保存 checkpoint；全部完成後 finalize，蒸餾知識並清除交接。 |
 | [tdd](skills/tdd/SKILL.md) | 你要求 test-first，或專案本身採用 TDD 時。 |
 | [verify](skills/verify/SKILL.md) | 實際執行變更，觀察行為是否符合需求。 |
-| [sit-verify](skills/sit-verify/SKILL.md) | 在 SIT 以真實登入驗功能、標頭與部署版本；token 預檢為閘門，攔截寫入只讀不改，不產測報。 |
+| [sit-verify](skills/sit-verify/SKILL.md) | 在 SIT 以真實登入驗功能、標頭與部署版本；token 預檢為閘門，攔截寫入、不改既有資料（新增須使用者逐項放行），不產測報。 |
 | [error-first-debug](skills/error-first-debug/SKILL.md) | bug、例外、錯誤資料、效能異常的根因診斷。 |
 | [review-checklist](skills/review-checklist/SKILL.md) | code review、規格追溯、交付驗收。 |
 | [spec-conventions](skills/spec-conventions/SKILL.md) | 撰寫或維護需求與規格（EARS、Given-When-Then）。 |

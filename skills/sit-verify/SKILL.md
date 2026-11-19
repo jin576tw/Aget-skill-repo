@@ -14,7 +14,7 @@ description: 在 SIT 環境以真實登入（login API 取 token → 導頁）�
 - **連線資訊不外洩**：SIT 網址、empNo、功能清單放 scratchpad 的 `sit.env`（使用者提供），不寫入 repo、board、memory、skill 或回報；token 只存記憶體，不印、不寫檔，不存 HAR／trace，log 與截圖檔名遮罩 token（`accessToken=`、JWT、Bearer）。回報以 `<SIT_HOST>` 遮罩主機。
 - **token 預檢是閘門**：任何瀏覽器操作前先以 `NODE_USE_SYSTEM_CA=1` 執行 `precheck`，只記 HTTP 狀態與有無 token。`ok` 為 false（連線失敗、非 2xx、轉址或無 token）立即中止回報；不重試硬闖、不關 TLS 驗證（`UNABLE_TO_VERIFY_LEAF_SIGNATURE` 多為未讀系統憑證庫）。
 - **不改既有資料；新增須逐項放行**：預設擋全部寫入。先只讀原始碼列 API 清單（含 GET）分 READ／CREATE／WRITE，不確定歸 WRITE，交使用者核准後才連 SIT。白名單只收 READ 類 POST（查詢、匯出）與使用者逐項明示放行的 CREATE；PUT／PATCH／DELETE 與更新型 POST 一律不放行；有副作用的 GET（logout、標記類）列入 `denyGet`。被擋回 403 JSON（不要回 401，會觸發 refreshToken）。會間接觸發寫入的操作（例如下載後自動 PUT 註記）停在前一步。
-- **守衛不可繞過**：驗測腳本只用 `startSession` 回傳的 page 操作；不得用 `page.request`／`context.request`，不得另行註冊 route。報告必列 `log.blocked`（非預期應為 0）與 `log.leaked`（必須為 0）。
+- **守衛不可繞過**：驗測腳本只用 `startSession` 回傳的 page 操作；不得用 `page.request`／`context.request`，不得另行註冊 route。報告必列 `log.blocked`（非預期應為 0）、`log.leaked`（必須為 0）與 `log.unsure`（失敗或無法判定是否送達，逐筆說明）。
 - **先確認部署版本**：驗修正前比對 SIT `index.html` 的 hash 檔名、Last-Modified、關鍵 bundle 版本字串與待驗 commit 的 build；不符即回報「SIT 未部署該版」，常見原因是套件升級後 base image 未重包導致 build 未換映像。
 - **確認環境注入**：導頁後讀前端環境（如 `window.profile`）與第一支 API 的實際主機；打到 localhost 即中止功能驗測回報。使用者核准才可用 `initScript` 注入，結果須註明「注入設定，非實際部署行為」。
 - **資料**：用頁面預設條件或使用者提供的區間／案號；無資料的項目標 unverified，不為造資料而寫入。截圖含業務資料者只留本機。
@@ -22,7 +22,7 @@ description: 在 SIT 環境以真實登入（login API 取 token → 導頁）�
 
 ## 用法
 
-`sit.env`（鍵名可依專案調整）：`SIT_BASE`、`LOGIN_PATH`、`AUTH_PATH`（如 `/app-ui/AuthView?accessToken=`）、`EMPNO`、`FUNCS`（逗號分隔）。
+`sit.env`（鍵名可依專案調整）：`SIT_BASE`、`LOGIN_PATH`、`AUTH_PATH`（如 `/app-ui/AuthView`）、`EMPNO`、`FUNCS`（逗號分隔）。
 
 ```js
 // NODE_USE_SYSTEM_CA=1 PLAYWRIGHT_CORE=file:///.../playwright-core/index.mjs node run.mjs
@@ -31,9 +31,17 @@ const env = loadEnv('<scratchpad>/sit.env');
 const pre = await precheck(env.SIT_BASE, env.LOGIN_PATH, { empNo: env.EMPNO, accessFunctionList: env.FUNCS.split(',') });
 console.log(pre.status, pre.hasToken); if (!pre.ok) process.exit(1);
 const s = await startSession({ base: env.SIT_BASE, allowPost: [{ path: '/app-api/v1/query' }] });
-await s.page.goto(env.SIT_BASE + env.AUTH_PATH + pre.token);
-// …驗測…；最後輸出 s.log（已遮罩），await s.browser.close()
+s.addSecret(pre.token); s.addSecret(env.EMPNO);
+try {
+  const url = new URL(env.SIT_BASE + env.AUTH_PATH); // AUTH_PATH 不含 token 參數
+  url.searchParams.set('accessToken', pre.token);
+  await s.page.goto(url.href);
+  // …驗測…
+} catch (e) { console.error(s.mask(e.message)); }
+finally { console.log(JSON.stringify(s.log)); await s.browser.close(); }
 ```
+
+守衛限制：放行請求由守衛代送且拒絕所有 3xx 轉址；worker 內建立的 WebSocket 不受 Playwright 攔截，頁面若用 worker WebSocket，相關驗項標 unverified。
 
 ## 步驟
 

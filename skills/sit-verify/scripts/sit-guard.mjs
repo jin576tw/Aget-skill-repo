@@ -13,11 +13,17 @@ export function loadEnv(file) {
   return o;
 }
 
-export const mask = (s, base) => String(s)
-  .split(new URL(base).host).join('<SIT_HOST>')
-  .replace(/accessToken=[^&\s"']+/g, 'accessToken=***')
-  .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]*/g, '<JWT>')
-  .replace(/Bearer\s+\S+/gi, 'Bearer ***');
+// secrets：已知敏感值（token、帳號等），逐字替換為 ***。
+export const mask = (s, base, secrets = []) => {
+  let t = String(s);
+  for (const x of secrets) if (x) t = t.split(x).join('***');
+  return t
+    .split(new URL(base).host).join('<SIT_HOST>')
+    .replace(/accessToken=[^&\s"']+/g, 'accessToken=***')
+    .replace(/"accessToken"\s*:\s*"[^"]*"/g, '"accessToken":"***"')
+    .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]*/g, '<JWT>')
+    .replace(/Bearer\s+\S+/gi, 'Bearer ***');
+};
 
 // 回傳 { ok, status, hasToken }；token 為不可列舉屬性，console.log／JSON.stringify 不會帶出。
 // ok=false 時呼叫端必須中止，不重試、不關 TLS 驗證。
@@ -62,7 +68,9 @@ const READ_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 export async function startSession({ base, allowPost = [], denyGet = [], marker = 'sit-verify', initScript, headless = true }) {
   const chromium = await loadChromium();
   const origin = new URL(base).origin;
-  const log = { blocked: [], allowedPosts: [], foreign: [], leaked: [], console: [], pageErrors: [] };
+  const secrets = [];
+  const m$ = (s) => mask(s, base, secrets);
+  const log = { blocked: [], allowedPosts: [], foreign: [], leaked: [], unsure: [], console: [], pageErrors: [] };
   const match = (p, x) => (x instanceof RegExp ? ((x.lastIndex = 0), x.test(p)) : x === p);
   const isAllowedPost = (p, data) => {
     const rule = allowPost.find((r) => match(p, r.path));
@@ -70,53 +78,71 @@ export async function startSession({ base, allowPost = [], denyGet = [], marker 
     if (!rule.check) return true;
     try { return !!rule.check(JSON.parse(data || 'null')); } catch { return false; }
   };
+  // 單一判定，route 與覆核共用：'pass'（非網路）、'foreign'、'deny'、'allow'
+  const decide = (method, url, data) => {
+    const u = new URL(url);
+    if (u.protocol === 'data:' || u.protocol === 'blob:') return 'pass';
+    if (u.origin !== origin) return 'foreign';
+    if (READ_METHODS.includes(method)) return denyGet.some((x) => match(u.pathname, x)) ? 'deny' : 'allow';
+    return method === 'POST' && isAllowedPost(u.pathname, data) ? 'allow' : 'deny';
+  };
+
   const browser = await chromium.launch({
     executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
     headless,
     args: [`--${marker}-marker=${process.pid}`],
   });
   const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, acceptDownloads: true, serviceWorkers: 'block' });
+  if (typeof ctx.routeWebSocket !== 'function') {
+    await browser.close();
+    throw new Error('此版 playwright-core 無 routeWebSocket，無法攔截 WebSocket，中止');
+  }
   if (initScript) await ctx.addInitScript(initScript);
-  const denied = new WeakSet();
-  const deny = (route, m, p) => {
-    denied.add(route.request());
-    log.blocked.push(`${m} ${p}`);
+
+  const handled = new WeakSet();
+  const deny = (route, m, p, reason = '') => {
+    handled.add(route.request());
+    log.blocked.push(m$(`${m} ${p}${reason}`));
     return route.fulfill({ status: 403, contentType: 'application/json', body: '{"message":"blocked by verify"}' });
   };
   await ctx.route('**/*', async (route) => {
     const req = route.request();
     const m = req.method();
     const u = new URL(req.url());
-    if (u.protocol === 'data:' || u.protocol === 'blob:') return route.continue();
-    if (u.origin !== origin) { log.foreign.push(`${m} <OTHER_HOST>${u.pathname}`); return route.abort(); }
-    if (READ_METHODS.includes(m)) {
-      if (denyGet.some((x) => match(u.pathname, x))) return deny(route, m, u.pathname);
-      return route.continue();
-    }
-    if (m === 'POST' && isAllowedPost(u.pathname, req.postData())) {
-      log.allowedPosts.push(`POST ${u.pathname}`);
-      return route.continue();
-    }
-    return deny(route, m, u.pathname);
-  });
-  if (typeof ctx.routeWebSocket === 'function') {
-    await ctx.routeWebSocket(/.*/, (ws) => { log.blocked.push('WS ' + mask(ws.url(), base)); ws.close(); });
-  } else {
-    log.blocked.push('WARN: 此版 playwright-core 無 routeWebSocket，WebSocket 未攔截');
-  }
-  // 覆核：任何寫入類請求若真的送出（未被 route 擋下）記入 leaked，報告必列。
-  ctx.on('requestfinished', (r) => {
-    if (denied.has(r)) return;
-    const m = r.method();
+    const d = decide(m, req.url(), req.postData());
+    if (d === 'pass') return route.continue();
+    if (d === 'foreign') { handled.add(req); log.foreign.push(m$(`${m} <OTHER_HOST>${u.pathname}`)); return route.abort(); }
+    if (d === 'deny') return deny(route, m, u.pathname);
+    // 放行的請求由守衛代送且不跟隨轉址：3xx 轉址後的請求不會再經過 route，一律拒絕。
     try {
-      const u = new URL(r.url());
-      if (u.origin === origin && !READ_METHODS.includes(m) && !(m === 'POST' && isAllowedPost(u.pathname, r.postData()))) {
-        log.leaked.push(`${m} ${u.pathname}`);
-      }
-    } catch {}
+      const resp = await route.fetch({ maxRedirects: 0 });
+      if (resp.status() >= 300 && resp.status() < 400) return deny(route, m, u.pathname, ` (redirect ${resp.status()})`);
+      if (m === 'POST') log.allowedPosts.push(`POST ${u.pathname}`);
+      handled.add(req);
+      return route.fulfill({ response: resp });
+    } catch (e) {
+      handled.add(req);
+      log.unsure.push(m$(`${m} ${u.pathname} fetch-error`));
+      return route.abort();
+    }
   });
+  await ctx.routeWebSocket(/.*/, (ws) => { log.blocked.push('WS ' + m$(ws.url())); ws.close(); });
+
+  // 覆核：任何未經守衛處理、且判定非 allow 的請求記入 leaked；失敗請求列 unsure。
+  const audit = (r, failed) => {
+    if (handled.has(r)) return;
+    let d;
+    try { d = decide(r.method(), r.url(), r.postData()); } catch { return; }
+    if (d === 'pass') return;
+    const line = m$(`${r.method()} ${d === 'foreign' ? '<OTHER_HOST>' : ''}${new URL(r.url()).pathname}`);
+    if (d !== 'allow') log.leaked.push(line);
+    else if (failed) log.unsure.push(line + ' failed');
+  };
+  ctx.on('requestfinished', (r) => audit(r, false));
+  ctx.on('requestfailed', (r) => audit(r, true));
+
   const page = await ctx.newPage();
-  page.on('console', (c) => { if (['error', 'warning'].includes(c.type())) log.console.push(`${c.type()}: ${mask(c.text(), base).slice(0, 300)}`); });
-  page.on('pageerror', (e) => log.pageErrors.push(mask(e.message, base).slice(0, 300)));
-  return { browser, ctx, page, log, marker };
+  page.on('console', (c) => { if (['error', 'warning'].includes(c.type())) log.console.push(`${c.type()}: ${m$(c.text()).slice(0, 300)}`); });
+  page.on('pageerror', (e) => log.pageErrors.push(m$(e.message).slice(0, 300)));
+  return { browser, ctx, page, log, marker, addSecret: (x) => { if (x) secrets.push(x); }, mask: m$ };
 }
