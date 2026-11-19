@@ -2,7 +2,7 @@
 
 最近異動時間：2026-11-19 12:48（UTC+08:00）
 
-給 Claude Code 與 Codex 使用的開發工具庫：35 個 skills、5 個 Agents、Node 腳本與選用 hooks。
+給 Claude Code 與 Codex 使用的開發工具庫：36 個 skills、5 個 Agents、Node 腳本與選用 hooks。
 
 安裝後不需要每次先執行初始化指令，也不必記指令名稱。直接用自然語言提出需求（例如「修正登入頁錯誤訊息」「幫我找這個設計的論文佐證」），模型會依 skill 的 description 自動選用；也可以手動點名。
 
@@ -263,7 +263,7 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 | 發布來源 | [`main`](https://github.com/jin576tw/Aget-skill-repo/tree/main) |
 | 安裝方式 | B. setup-work：`--scope user --platform both --hooks`，安裝副本在 `~/.aget/plugin` |
 | 同步範圍 | `~/.claude/skills/aget-*`、`~/.claude/agents/aget-*`、`~/.claude/CLAUDE.md` 區塊；`~/.agents/skills/aget-*`、`~/.codex/AGENTS.md` 區塊；兩宿主 hooks |
-| 內容 | 35 個 skills、5 個 Agents |
+| 內容 | 36 個 skills、5 個 Agents |
 | 檢查結果 | `setup-work --check` 為 `SETUP_CURRENT`（changes、removed 皆空） |
 
 本版調整：
