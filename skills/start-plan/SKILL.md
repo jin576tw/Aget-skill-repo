@@ -9,6 +9,8 @@ description: 為跨 session、共享依賴或多項交付建立可接續計畫�
 
 將需求形成可執行的目標、範圍、依賴與驗收契約，保存目前證據及未完成工作；規劃詳細度以協調需求為準。
 
+主會話建立 plan-board 或接手整張 board 時，預設依 [plan-coord](../plan-coord/SKILL.md) 擔任 COORD。建立時先確認目標、交付與驗收條件；接手時先讀最新 board，核對已確認的目標、任務狀態、現有 claim 與依賴。明確只交付 `PLAN-ID:TASK` 時，依執行者契約先讀該任務與認領／放行紀錄。
+
 ## 驗收
 
 每項目標有交付與驗收依據；交給執行者時按 [Execution Brief](../start-work/references/execution-brief.md) 提供範圍、不可改行為、Context、AC、驗證與 Done，可引用既有 spec。依賴指向既有任務且無循環。保留已確認約束。持久共享 board 的每個任務都要在 contract 填 `Model`（模型或 tier 加一句理由）與 `Effort`（建議值），讓使用者和執行者在派工前就看得到配置；選法依 plan-coord「派工配置」與 `rules/model-profiles.json`。簡單計畫、Worker、回合及 session 數不作通用必填。跨任務整合證據不能由單項驗收產生時才增加整合目標，不固定 INTEGRATION 角色。
@@ -17,7 +19,7 @@ description: 為跨 session、共享依賴或多項交付建立可接續計畫�
 
 簡單計畫可直接回覆；持久共享 board 使用 [Markdown 範本](references/plan-board-template.md)。現有 board 的 locked contract 與 claim 不可靜默變更；計畫方向已獲授權時不增加例行確認。
 
-多執行者或多 session 需要場控時，使用 [plan-coord](../plan-coord/SKILL.md)。只有跨任務契約、共用資源或多方案判斷出現實質衝突時，依 [plan-conflict-discussion](../plan-conflict-discussion/SKILL.md) 蒐證與裁定。派工模型及 effort 採用 [模型派工指引](../start-work/references/model-dispatch.md)。
+跨任務契約、共用資源或多方案判斷出現實質衝突時，依 [plan-conflict-discussion](../plan-conflict-discussion/SKILL.md) 蒐證與裁定。派工模型及 effort 採用 [模型派工指引](../start-work/references/model-dispatch.md)。
 
 ## Node 工具
 
@@ -58,4 +60,4 @@ COORD 啟動先讀 registry，按 session id 使用宿主可用工具定位，�
 
 ## 派工預算
 
-新派工前在 mutable progress 保存預算，不改寫舊 locked contract。使用現有 update 的 budget 參數，欄位及恢復規則見 [Dispatch budget](../../docs/runtime.md#dispatch-budget)。validate 的結構有效不等於可派工；COORD 同時核對 tasks 的 dispatch.budget_ready、依賴、資源及授權，再派工。舊 active 任務可回報與完成，從 ready／waiting／blocked 進入 in_progress 則需要有效預算。
+新派工依 [plan-coord](../plan-coord/SKILL.md#派工前預算與現場確認) 先確認目標與驗收，再按執行步驟估列預算。使用現有 update 在 mutable progress 保存 Budget 及計畫摘要或引用。欄位及恢復規則見 [Dispatch budget](../../docs/runtime.md#dispatch-budget)。COORD 核對 validate 的結構結果、tasks 的 dispatch.budget_ready、計畫與授權、依賴及資源後放行。舊 active 任務可回報與完成，從 ready／waiting／blocked 進入 in_progress 則需要有效預算。

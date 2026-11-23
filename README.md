@@ -95,7 +95,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform both --hook
 |---|---|
 | [start-work](skills/start-work/SKILL.md) | 開發需求、bug 修正、接續既有實作。日常開發的主要入口：判斷規劃、技術能力與驗收方式。 |
 | [start-plan](skills/start-plan/SKILL.md) | 需求跨多個 session、有共享依賴或多項交付時，建立或接續 plan-board。小任務不需要。 |
-| [plan-coord](skills/plan-coord/SKILL.md) | 你指派某個 session 擔任多 session plan board 的 COORD（場控）時：認領、依賴、共用資源、分波派工與獨立驗收。 |
+| [plan-coord](skills/plan-coord/SKILL.md) | 主會話建立或接手整張 plan-board 時，預設擔任 COORD（場控）：核對依賴、認領與預算，分派任務、獨立驗收並回寫看板。 |
 | [plan-conflict-discussion](skills/plan-conflict-discussion/SKILL.md) | plan board 任務遇到跨任務衝突、契約與現況不符或多個合理方案時，回報場控並取得第二意見與裁定。 |
 | [handover](skills/handover/SKILL.md) | 暫停或到達里程碑時保存 checkpoint；全部完成後 finalize，蒸餾知識並清除交接。 |
 | [tdd](skills/tdd/SKILL.md) | 你要求 test-first，或專案本身採用 TDD 時。 |
@@ -139,7 +139,7 @@ node scripts/setup-work.mjs --scope user --target "$HOME" --platform both --hook
 |---|---|
 | [consult-claude](skills/consult-claude/SKILL.md) | Codex 透過本機 `claude` CLI 請 Claude 做獨立 review、第二意見、架構挑戰、除錯或辯論；Codex 驗證後決策。需要已登入的 Claude Code CLI。 |
 | [consult-codex](skills/consult-codex/SKILL.md) | Claude Code 透過本機 `codex exec` 請 Codex 做獨立 review、第二意見、架構挑戰、除錯或辯論，依 rules/model-profiles.json 選擇可用模型；Claude 驗證後決策。需要已登入的 Codex CLI。 |
-| [ask-arxiv](skills/ask-arxiv/SKILL.md) | 找近期 arXiv 論文佐證或反證設計，或核對他人引用的研究數字。 |
+| [ask-arxiv](skills/ask-arxiv/SKILL.md) | 找近期 arXiv 論文佐證或反證設計，或核對他人引用的研究數字。適用時可補註引用次數、查詢日期與來源。 |
 | [jira-get-attachments](skills/jira-get-attachments/SKILL.md) | 讀取 Jira 附件與截圖，確認實際功能入口。需要 Jira connector 或受信任的端點。 |
 | [jira-fix-comment](skills/jira-fix-comment/SKILL.md) | 依已驗證的修正整理 Jira 留言草稿。你明確授權才會張貼。 |
 | [llm-wiki-maintainer](skills/llm-wiki-maintainer/SKILL.md) | 查詢、整理、蒸餾知識庫。 |
@@ -174,7 +174,7 @@ Codex 的派工介面對 GPT-6.2 Sol 與 Astra 列出 `low`（預設）、`mediu
 
 ### Agents
 
-探索與測試派工依 [start-work](skills/start-work/SKILL.md)，程式碼與規格審查依 [review-checklist](skills/review-checklist/SKILL.md) 及 [spec-conventions](skills/spec-conventions/SKILL.md)。Claude 入口保留既有呼叫名稱與工具清單。Codex 以宿主提供的工作者搭配相同 skills，需強制唯讀時使用宿主權限限制。跨 session 規劃從 [start-plan](skills/start-plan/SKILL.md) 進入，按情境載入場控或衝突討論。
+探索與測試派工依 [start-work](skills/start-work/SKILL.md)，程式碼與規格審查依 [review-checklist](skills/review-checklist/SKILL.md) 及 [spec-conventions](skills/spec-conventions/SKILL.md)。Claude 入口保留既有呼叫名稱與工具清單。Codex 以宿主提供的工作者搭配相同 skills，需強制唯讀時使用宿主權限限制。跨 session 規劃從 [start-plan](skills/start-plan/SKILL.md) 進入。主會話先確認目標與驗收條件，按執行步驟估算時間、工具呼叫與驗證成本，寫入看板後再派工。只接手 `PLAN-ID:TASK` 的會話依任務契約執行並回報證據。
 
 | Agent | 用途 | 工具權限 |
 |---|---|---|
@@ -207,7 +207,7 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 | `scripts/enable-vault.mjs <vault>` | 在知識庫入口加入 Aget 契約，只需執行一次。 |
 | `scripts/pack-docx.mjs <parts-dir> <out.docx>` | 把 OOXML parts 打包成 .docx（bsd-report 使用）。 |
 | `skills/start-plan/scripts/plan-board.mjs` | plan-board 的查詢、驗證、認領與狀態更新。 |
-| `npm test` ／ `npm run check` | 回歸測試；套件、manifest 與連結檢查。 |
+| `npm test` ／ `npm run check` | 回歸測試，以及套件、manifest、連結與本機 XSD 相依檢查。 |
 
 ### 文件腳本入口
 
@@ -272,7 +272,7 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 - `rules/model-profiles.json`：新增 `claude-fable-5-2`；Opus 5.5、Sonnet 5.5、Haiku 5.5 補選模與 effort 準則（依 2026-11-09 模型選擇文章）。
 - 探索、測試與審查規則由共用 skills 提供。Claude 保留四個角色的既有名稱與工具清單。
 - GPT-6.2 Sol（balanced）及 Astra（frontier）納入模型表。
-- `skills/plan-coord`：補 Claude Code COORD 以 `ListAgents` 名稱聯絡 session 的規則。
+- `skills/plan-coord`：主會話預設負責整張看板。派工前確認目標與驗收、按步驟編列預算，並保留 Claude Code 透過 `ListAgents` 名稱聯絡 session 的方式。
 
 更新流程（repo 為唯一來源，不在宿主目錄直接改工具）：
 

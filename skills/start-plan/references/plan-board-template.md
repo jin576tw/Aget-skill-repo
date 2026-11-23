@@ -76,4 +76,4 @@ update 會把舊 progress 壓成一行移入 `- History:`（新到舊），不�
 
 任務欄位與整體驗收依 [測試預算與驗收](../../verify/references/test-budget.md)；適用所有執行形式。
 
-派工前以 update 保存 Budget（單行 JSON，位於 PROGRESS，不在 locked contract）；不要把範例或 placeholder 當已核准預算。必要欄位及範例見 [Dispatch budget](../../../docs/runtime.md#dispatch-budget)。update 會保留目前 Budget，舊值與修改理由保留於 History；budget_ready 只代表預算欄位齊全且未到期，不證明授權或驗證環境已核對。
+派工前在 progress summary 記目標／驗收確認依據、核對後的執行步驟或引用、依步驟估算的工具呼叫上限。每步含入口、產出、驗證、假設、估計時間／工具呼叫及停止條件。以 update 保存 Budget（PROGRESS 中的單行 JSON），必要欄位及範例見 [Dispatch budget](../../../docs/runtime.md#dispatch-budget)。update 會保留目前 Budget，舊值與修改理由保留於 History。`budget_ready` 提供預算欄位與時間狀態，目標、計畫、驗證環境與授權由 COORD 依 [派工前預算與現場確認](../../plan-coord/SKILL.md#派工前預算與現場確認) 核對。
