@@ -24,6 +24,18 @@ for (const file of walk(sourceRoot).filter(
     });
     if (r.status !== 0) errors.push(r.stderr);
   }
+  if (file.endsWith(".xsd")) {
+    const schema = fs.readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, "");
+    for (const [, , location] of schema.matchAll(/\bschemaLocation\s*=\s*(["'])([^"']+)\1/g)) {
+      if (/^[a-z][a-z0-9+.-]*:/i.test(location) || path.isAbsolute(location))
+        continue;
+      const dependency = path.resolve(path.dirname(file), location);
+      if (!fs.statSync(dependency, { throwIfNoEntry: false })?.isFile())
+        errors.push(
+          "Missing schema dependency: " + path.relative(sourceRoot, file) + " -> " + location,
+        );
+    }
+  }
   if (!file.endsWith(".md")) continue;
   const text = fs.readFileSync(file, "utf8");
   if (path.basename(file) === "SKILL.md") {
@@ -103,5 +115,5 @@ if (errors.length) {
   process.exitCode = 1;
 } else
   console.log(
-    `${count} skills; Node syntax, manifests, Markdown links and PowerShell removal verified.`,
+    `${count} skills; Node syntax, manifests, Markdown links, local XSD dependencies and PowerShell removal verified.`,
   );
