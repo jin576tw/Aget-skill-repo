@@ -264,7 +264,7 @@ Node.js 18+ 是核心；Python 3.10+ 僅供 Word／PDF／Excel 腳本。使用 r
 | 安裝方式 | B. setup-work：`--scope user --platform both --hooks`，安裝副本在 `~/.aget/plugin` |
 | 同步範圍 | `~/.claude/skills/aget-*`、`~/.claude/agents/aget-*`、`~/.claude/CLAUDE.md` 區塊；`~/.agents/skills/aget-*`、`~/.codex/AGENTS.md` 區塊；兩宿主 hooks |
 | 內容 | 36 個 skills、5 個 Agents |
-| 檢查結果 | `setup-work --check` 為 `SETUP_CURRENT`（changes、removed 皆空） |
+| 安裝驗收 | 對目標執行 `setup-work --check`，預期回傳 `SETUP_CURRENT`（changes、removed 皆空）。 |
 
 本版調整：
 
@@ -283,7 +283,7 @@ node scripts/setup-work.mjs --scope user --platform both --hooks
 node scripts/setup-work.mjs --scope user --platform both --hooks --check   # 應為 SETUP_CURRENT
 ```
 
-已知限制：setup 只管理 `aget-*` 名稱，不會偵測或清理宿主目錄中不帶前綴的同名舊副本；本次核對的七個 Claude 同名舊連結均指向已不存在的目錄。兩宿主的 `aget-*` 版本雜湊與來源一致。
+已知限制：setup 只管理 `aget-*` 名稱，不會偵測或清理宿主目錄中不帶前綴的同名舊副本；同步後以兩宿主的 `aget-*` 檔案雜湊核對來源，並另行盤點同名舊副本。
 
 ## 延伸文件
 
