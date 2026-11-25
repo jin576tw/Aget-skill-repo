@@ -8,6 +8,8 @@ import {
   fail,
 } from "./files.mjs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { registerSession, renderSessionTable, sessionTable } from "./board-sessions.mjs";
 export const contractHash = (s) => sha(s.replace(/\r\n?/g, "\n").trim());
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function field(s, k, optional = false) {
@@ -86,7 +88,7 @@ export function parseBoard(input, workspace) {
   if (!Number.isSafeInteger(revision) || revision < 0) fail("INVALID_REVISION");
   const rows = [
     ...text.matchAll(
-      /^\|\s*(\[[ xX]\])\s*\|\s*([A-Z0-9-]+)\s*\|\s*([a-z_]+)\s*\|\s*([^|]*)\|\s*(\d+)\s*\|\s*([^|]*)\|\s*$/gm,
+      /^\|\s*(\[[ xX]\])\s*\|\s*([A-Z0-9-]+)\s*\|\s*([a-z_]+)\s*\|\s*([^|]*)\|\s*(\d+)\s*\|\s*([^|]*)\|(?:([^\n]+\|))?[ \t]*$/gm,
     ),
   ].map((m) => ({
     raw: m[0],
@@ -94,6 +96,8 @@ export function parseBoard(input, workspace) {
     status: m[3],
     claim: m[4].trim(),
     revision: Number(m[5]),
+    updated: m[6].trim(),
+    extra: m[7],
     done: m[1].toLowerCase() === "[x]",
   }));
   if (!rows.length || new Set(rows.map((r) => r.task)).size !== rows.length)
@@ -165,7 +169,7 @@ export function parseBoard(input, workspace) {
     (status === "completed" && !rows.every((r) => r.status === "completed"))
   )
     fail("PLAN_STATUS_MISMATCH");
-  return { text, plan, revision, status, rows };
+  return { text, plan, revision, status, rows, ...sessionTable(text, plan, rows) };
 }
 // Mechanical wave candidates only; COORD still judges checkpoints, isolation and evidence.
 function waves(rows, eligible) {
@@ -271,7 +275,8 @@ export function board(p) {
         plan_id: b.plan,
         revision: b.revision,
         plan_status: b.status,
-        tasks: b.rows.map(({ raw, block, contract, done, ...r }) => r),
+        tasks: b.rows.map(({ raw, block, contract, done, extra, ...r }) => r),
+        sessions: b.sessions,
         next_tasks: eligible
           .filter((r) => r.priority === eligible[0]?.priority)
           .map((r) => `${b.plan}:${r.task}`),
@@ -281,6 +286,18 @@ export function board(p) {
           task: `${b.plan}:${x.task}`,
         })),
       };
+    }
+    if (action === "register-session") {
+      if (sha(original) !== p.expectedHash) fail("PLAN_CONCURRENT_UPDATE");
+      const now = new Date().toISOString();
+      const registration = registerSession(b, task, p, now, randomUUID);
+      const next = registration.text
+        .replace(/^- Plan-Revision:.*$/m, `- Plan-Revision: ${b.revision + 1}`)
+        .replace(/^- Updated:.*$/m, `- Updated: ${now}`);
+      parseBoard(next, workspace);
+      const output = original.includes("\r\n") ? next.replace(/\n/g, "\r\n") : next;
+      atomic(file, output, sha(original));
+      return { signal: "SESSION_REGISTERED", hash: sha(output), session: registration.session };
     }
     if (action === "complete") {
       if (sha(original) !== p.expectedHash) fail("PLAN_CONCURRENT_UPDATE");
@@ -296,10 +313,13 @@ export function board(p) {
         .replace(/^- Plan-Status:.*$/m, "- Plan-Status: completed")
         .replace(/^- Plan-Revision:.*$/m, `- Plan-Revision: ${b.revision + 1}`)
         .replace(/^- Updated:.*$/m, `- Updated: ${now}`)
-        + `\n## Plan acceptance\n- Reviewer: ${clean(p.reviewer)}\n- Evidence: ${clean(p.evidence)}\n- Inflight: []\n`;
+        + `\n## Plan acceptance\n- Reviewer: ${clean(p.reviewer)}\n- Evidence: ${clean(p.evidence)}\n- Inflight: []\n- Completed: ${now}\n`;
       parseBoard(next, workspace);
-      atomic(file, next, sha(original));
-      return { signal: "PLAN_COMPLETED", hash: sha(next), plan_id: b.plan };
+      const migrated = b.summary && !b.rows[0].extra
+        ? renderSessionTable(parseBoard(next, workspace))
+        : next;
+      atomic(file, migrated, sha(original));
+      return { signal: "PLAN_COMPLETED", hash: sha(migrated), plan_id: b.plan };
     }
     if (action !== "update") fail("UNSUPPORTED_ACTION");
     if (sha(original) !== p.expectedHash) fail("PLAN_CONCURRENT_UPDATE");
@@ -382,7 +402,7 @@ export function board(p) {
       .replace(r.block.raw, () => changed)
       .replace(
         r.raw,
-        () => `| ${p.status === "completed" ? "[x]" : "[ ]"} | ${task} | ${p.status} | ${claim} | ${r.revision + 1} | ${now} |`,
+        () => `| ${p.status === "completed" ? "[x]" : "[ ]"} | ${task} | ${p.status} | ${claim} | ${r.revision + 1} | ${now} |${r.extra || ""}`,
       );
     next = next
       .replace(/^- Plan-Revision:.*$/m, `- Plan-Revision: ${b.revision + 1}`)
@@ -391,6 +411,8 @@ export function board(p) {
         "- Plan-Status: active",
       )
       .replace(/^- Updated:.*$/m, `- Updated: ${now}`);
+    const updated = parseBoard(next, workspace);
+    if (b.summary && !r.extra) next = renderSessionTable(updated);
     parseBoard(next, workspace);
     atomic(file, next, sha(original));
     return {

@@ -114,6 +114,31 @@ Aget 的合作寫入方使用 `.aget-write.lock` 與預期 hash；hook pending �
 
 核心回歸：`npm test`；套件／相對連結：`npm run check`。Native Windows 及模型情境觸發需在對應宿主環境驗證，不能由本機 fixture 推導已通過。
 
+### Session registration
+
+`status` 回傳 `tasks`、`sessions` 和整板 `hash`。新增待命登記時使用實際 root、workspace、hash 與宿主路由 ID。
+
+```json
+{
+  "action": "register-session",
+  "root": "<vault>/plan-boards",
+  "workspace": "<workspace>",
+  "taskId": "PLAN-P01:TASK-01",
+  "expectedHash": "<status.hash>",
+  "session": {
+    "name": "任務執行者",
+    "host": "codex",
+    "sessionId": "<host-provided-id>",
+    "model": "gpt-6.2-sol",
+    "effort": "medium",
+    "source": "host-report",
+    "state": "standby"
+  }
+}
+```
+
+以回傳的 `session.id` 更新同一登記，可只傳變更欄位。COORD 可傳選用的 `taskName`。重新啟動執行時先將舊列標為 `released`，再新建登記。使用 `dispatched` 記錄已派工，`historical` 記錄歷史。遇到寫入衝突先讀取最新 status。PowerShell 使用 UTF-8 將 JSON pipe 至 Node，Bash 使用 stdin 重導；Markdown 是持久資料來源。
+
 ### Plan acceptance
 
 plan-board action `complete` 明確完成計畫：提供 `expectedHash`、非空 `reviewer`、非空 `evidence` 及 `inflight: []`。所有 Task 須 completed；失敗回 `PLAN_TASKS_INCOMPLETE` 或 `PLAN_ACCEPTANCE_REQUIRED`。最後 Task 完成不再自動完成計畫。evidence 記錄整體完成條件、Sign-off、必要驗證及使用者明確豁免；語意由驗收者負責，工具不解析自然語言。舊 completed board 可讀。

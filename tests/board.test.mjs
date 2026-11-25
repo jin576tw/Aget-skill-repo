@@ -381,3 +381,33 @@ test("released claim requires explicit budget; blocked legacy cannot resume with
   assert.throws(() => step("B", "legacy", "in_progress"), /DISPATCH_BUDGET_REQUIRED/);
   step("B", "legacy", "in_progress", { budget });
 });
+
+test("legacy sessions migrate once; task and Session changes preserve the contract", (t) => {
+  const { p, file, text } = fixture(t);
+  const legacy = "## Session Registry\n\n| Plan-ID | Task-ID | Host | Session-ID | Model | State | Updated |\n" +
+    "|---|---|---|---|---|---|---|\n| PLAN-P01 | B | claude-code | old | sonnet | released | - |\n\n";
+  fs.writeFileSync(file, text.replace("| Done", legacy + "| Done").replaceAll("\n", "\r\n"));
+  const before = board(p);
+  assert.equal(before.sessions[0].effort, "unknown");
+  const register = { ...p, task: "A", action: "register-session", expectedHash: before.hash,
+    taskName: "資料核對", session: { name: "待命執行者", host: "codex", sessionId: "thread",
+      model: "gpt-6.2-sol", effort: "xhigh", state: "standby", source: "host-report" } };
+  const first = board(register);
+  assert.equal(board(p).tasks[0].name, "資料核對");
+  assert.equal(board(p).tasks[0].claim, "-");
+  assert.equal(board(p).sessions.length, 2);
+  assert.match(fs.readFileSync(file, "utf8"), /\r\n<!-- START-PLAN:TASK:/);
+  assert.throws(() => board(register), /CONCURRENT_UPDATE/);
+  assert.throws(() => board({ ...register, task: "B", expectedHash: first.hash }), /SESSION_CONFLICT/);
+  const released = board({ ...register, expectedHash: first.hash,
+    session: { id: first.session.id, state: "released" } });
+  const reused = board({ ...register, task: "B", expectedHash: released.hash });
+  assert.notEqual(first.session.id, reused.session.id);
+  board({ ...p, task: "A", action: "update", status: "in_progress", claim: "worker",
+    budget, expectedHash: reused.hash });
+  assert.equal(board(p).sessions.length, 3);
+  assert.equal(board(p).tasks[0].name, "資料核對");
+  const hashes = board({ ...p, action: "hash", task: "A" });
+  assert.equal(hashes.stored, hashes.computed);
+  assert.doesNotMatch(fs.readFileSync(file, "utf8"), /## Session Registry/);
+});
