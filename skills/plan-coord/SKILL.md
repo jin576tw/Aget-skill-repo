@@ -51,25 +51,16 @@ COORD 依模型指引實際指派模型：每個任務先選定一組「模型�
 
 ## 任務 session 先啟動：待命登記
 
-寫入權限：COORD 專屬寫入範圍為任務狀態、claim、progress、派工與驗收；每個任務 session 明確獲准在 COORD 尚未啟動時新增或更新 Session Registry 中自己的登記列。此登記不需 COORD 預先核准，不受「COORD 唯一 board writer／執行者不寫 board」的概括文字阻擋；不得藉此修改其他列或任務契約。既有 board 若仍使用概括文字，先依使用者已授權的登記流程將協調規則同步為上述範圍；若 locked contract 明文禁止登記則回報具體衝突。
+COORD 維護任務狀態、claim、progress、派工與驗收。COORD 啟動前，任務 Session 讀完契約可透過 `register-session` 自登或更新自己的 `standby` 列。即使依賴尚未完成，也可以登記待命；登記不取得 claim。COORD 核對 Plan-ID、Task-ID、context、依賴與資源後放行，將登記改為 `dispatched`。直接派出的子代理取得宿主回傳後也要登記。失聯標 `unavailable`，缺少聯絡工具時提供可轉貼的派工訊息。
 
-支援先啟動任務 session、準備完成並待命，再啟動 COORD。任務 session 讀完指定任務契約後，立即在 board 的 `Session Registry` 區登記 Plan-ID、Task-ID、宿主、可供宿主定位的 session id／record-id、目前模型、`standby` 與更新時間；顯示名稱僅供輔助。session id 是工具路由識別，不可填登入 session、cookie 或 token。只能使用宿主實際提供的 id，不可猜測；取不到時填 `unavailable` 並向使用者回報定位缺口。
+合併表以 TASK 列顯示名稱與建議配置，Session 列顯示名稱、宿主、Session ID、model、effort、來源、狀態、登記 ID 與時間。Session ID 使用宿主提供的路由識別；待命時取不到填 `unavailable` 並告知使用者。歷史缺證填 `unknown`。配置來源用 `host-report`、`launch-args`、`dispatch-history` 或 `unknown`，保留宿主原始 effort，確認不支援才填 `n/a`。
 
-登記是協調 metadata，不是 claim：保留任務 ready、原 Claim-ID、依賴及 contract hash，不取得資源、不開始實作。依賴未完成仍可登記待命。回報「Task-ID／session id／已登記待命，等待 COORD 放行」。同 task 可保留多個候選 session，不能覆蓋他人紀錄。
+兩宿主共用 [JSON 登記介面](../../docs/runtime.md)。更新前取 `status` 的 hash，衝突時重讀。執行者只可操作自己的列，COORD 可設定 TASK 顯示名稱及補登歷史。核對 `/clear` 重用後將舊列標 `released`，再建新列。任務狀態、進度及 claim 仍走 `update`。
 
-登記區放在所有 TASK／CONTRACT／PROGRESS markers 外。這是執行者不得寫 board 的狹義例外：僅可更新自己的登記列。寫入使用當前 board 共用鎖（使用當前 `scripts/lib/files.mjs` 的 `locked(root, fn)`，勿另建不同鎖協定）、最新整檔 hash 比對與同目錄 temp＋rename；衝突時重讀合併，不盲寫。不能安全取得鎖或無寫入權限時，只回報登記內容供 COORD 補登，不宣稱已登記。現有 `update` 不提供 registry 欄位，不能假冒 `in_progress` 寫入登記，也不能用任務 summary 取代登記區。COORD 上線後由其維護登記狀態與核對時間；任務狀態／claim／progress 仍一律走 start-plan update。
-
-COORD 啟動先讀 registry，按 session id 使用宿主可用工具定位，再核對目前 Plan-ID、Task-ID、context、模型及是否仍待命；不得要求使用者為了啟動順序重開 session。舊 id 不可直接視為存活或持有 claim，尤其 `/clear` 可重用 record-id。確認依賴與資源後才認領、派工並將登記標為 dispatched；失聯標 unavailable，重複候選先去重，不能同時放行。沒有 session 聯絡工具時，提供含 session id 的可轉貼派工訊息，不能宣稱已通知。
-
-登記格式：
-
-| Plan-ID | Task-ID | Host | Session-ID | Model | State | Updated |
-|---|---|---|---|---|---|---|
-| <plan> | <task> | <host> | <actual-id-or-unavailable> | <model-or-unknown> | standby | <timestamp> |
 ### Claude Code／Codex session id 取得方式
 
 - Claude Code：本機 skill 載入時的目前 session id 為 `${CLAUDE_SESSION_ID}`。使用 Claude 已展開的實際值；若仍是原樣 placeholder（例如直接 Read SKILL.md 或不支援替換的宿主），不可登記該字串。改取目前 SessionStart hook JSON 的 `session_id`（宿主已提供時），或請使用者以 `/status` 確認目前 session id。不要假設 shell 存在同名環境變數。
-- Claude Code COORD 聯絡：`SendMessage` 只認 `ListAgents` 列出的名稱（`name [ref]`），不認 session UUID；`/clear` 也會換新 UUID。登記時除 Session-ID 外，於 Host 欄附註 ListAgents 名稱（例 `claude-code (docs-14)`）；COORD 以名稱傳訊，對不上時向候選 session 發身分確認並以回覆核對，不憑名稱猜測。
+- Claude Code COORD 聯絡：`SendMessage` 只認 `ListAgents` 列出的名稱（`name [ref]`），不認 session UUID；`/clear` 也會換新 UUID。登記時除 Session-ID 外，於 Name 欄附註 ListAgents 名稱（例 `claude-code (docs-14)`）；COORD 以名稱傳訊，對不上時向候選 session 發身分確認並以回覆核對，不憑名稱猜測。
 - Codex：在目前頂層任務的 shell 讀取 `CODEX_THREAD_ID`；PowerShell：`[Environment]::GetEnvironmentVariable('CODEX_THREAD_ID')`，POSIX shell：`printenv CODEX_THREAD_ID`。登記 Host=codex、Session-ID=該 thread id。Codex 不執行 Claude 的 placeholder 替換，不可用上列 Claude 字串。
 - Codex 的 COORD 可用可用的 `list_threads`／`read_thread(threadId)` 核對，再以 `send_message_to_thread(threadId)` 派工。無環境值時可從宿主明確提供的目前 thread id 取得；不能只憑標題或最新時間猜中清單中的一筆。巢狀 CLI／子程序的繼承環境可能指向父任務，須以其啟動結果的 thread id 為準。
 - Claude 與 Codex 的 id 分屬不同宿主，配對鍵為 Host＋Session-ID；跨宿主沒有可用聯絡工具時提供轉貼訊息，不把 Claude id 傳入 Codex thread 工具。取得失敗仍依 unavailable 流程處理。

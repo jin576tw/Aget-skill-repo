@@ -12,13 +12,6 @@
 - Plan-Revision: 1
 - Updated: <timestamp>
 
-## Session Registry
-
-任務 session 先登記 standby，COORD 核對後才放行；登記不取得 claim。
-
-| Plan-ID | Task-ID | Host | Session-ID | Model | State | Updated |
-|---|---|---|---|---|---|---|
-
 ## 工作目標
 <goal>
 
@@ -26,12 +19,12 @@
 <plan-level Done: required deliverables, integration evidence and who signs off the whole plan>
 
 ## 協調規則
-寫入權限：COORD 專屬寫入範圍為任務狀態、claim、progress、派工與驗收；每個任務 session 明確獲准在 COORD 尚未啟動時新增或更新 Session Registry 中自己的登記列。此登記不需 COORD 預先核准，不受「COORD 唯一 board writer／執行者不寫 board」的概括文字阻擋；不得藉此修改其他列或任務契約。既有 board 若仍使用概括文字，先依使用者已授權的登記流程將協調規則同步為上述範圍；若 locked contract 明文禁止登記則回報具體衝突。
+寫入權限：COORD 專屬寫入範圍為任務狀態、claim、progress、派工與驗收；每個任務 session 明確獲准在 COORD 尚未啟動時新增或更新 合併任務表中自己的 Session 列。此登記不需 COORD 預先核准，不受「COORD 唯一 board writer／執行者不寫 board」的概括文字阻擋；不得藉此修改其他列或任務契約。既有 board 若仍使用概括文字，先依使用者已授權的登記流程將協調規則同步為上述範圍；若 locked contract 明文禁止登記則回報具體衝突。
 <COORD identity, wave dispatch allowed or not, escalation path and shared resources outside any single task>
 
-| Done | Task | Status | Claim | Revision | Updated |
-|---|---|---|---|---:|---|
-| [ ] | IMPLEMENT | ready | - | 0 | - |
+| Done | Task | Status | Claim | Revision | Updated | Name | Host | Session-ID | Model | Effort | Source | Registration-ID |
+|---|---|---|---|---:|---|---|---|---|---|---|---|---|
+| [ ] | TASK-01 | ready | - | 0 | - | <任務名稱> | | | <model> | <effort> | task-contract | |
 
 <!-- START-PLAN:TASK:IMPLEMENT:BEGIN -->
 ## IMPLEMENT
